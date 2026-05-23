@@ -9,6 +9,14 @@ import type { Actions, PageServerLoad } from "./$types.js";
 
 const DEMO_MODE = process.env.DEMO_MODE === "true";
 
+// In demo mode, the public 'demo' account is shared by every visitor. If any
+// visitor renames it, changes its email, or rotates its password, everyone
+// else gets locked out until the hourly reset. Block self-modification of
+// that account so the demo stays usable between resets.
+function isProtectedDemoUser(username: string | undefined): boolean {
+	return DEMO_MODE && username === "demo";
+}
+
 const defaultSettings: Record<string, string> = {
 	siteName: "SvelteForge Admin",
 	timezone: "UTC",
@@ -91,6 +99,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
 	updateProfile: async ({ request, locals }) => {
+		if (isProtectedDemoUser(locals.user?.username)) {
+			return fail(403, { message: "The shared demo account cannot be modified" });
+		}
+
 		const formData = await request.formData();
 		const name = formData.get("name");
 		const email = formData.get("email");
@@ -115,6 +127,10 @@ export const actions: Actions = {
 	},
 
 	changePassword: async ({ request, locals }) => {
+		if (isProtectedDemoUser(locals.user?.username)) {
+			return fail(403, { message: "The shared demo account cannot be modified" });
+		}
+
 		const formData = await request.formData();
 		const currentPassword = formData.get("currentPassword");
 		const newPassword = formData.get("newPassword");

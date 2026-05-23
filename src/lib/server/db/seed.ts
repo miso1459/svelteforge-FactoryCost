@@ -37,6 +37,17 @@ export async function seedDemo() {
 	const passwordHash = await hash("password123", ARGON2_CONFIG);
 
 	const userData = [
+		// Demo account — what the login page pre-fills. Viewer role so visitors
+		// can explore safely. Protected from self-modification by the (app)
+		// settings actions (see updateProfile / changePassword).
+		{
+			name: "Demo User",
+			email: "demo@svelteforge.dev",
+			username: "demo",
+			password: "SvelteDemo2026!",
+			role: "viewer" as const,
+			daysAgo: 365,
+		},
 		// 12 months ago (2 users)
 		{
 			name: "Admin User",
@@ -410,18 +421,20 @@ export async function seedDemo() {
 		if (u.role === "editor" || u.role === "admin") {
 			editorIds.push(id);
 		}
+		const userPasswordHash =
+			"password" in u && u.password ? await hash(u.password, ARGON2_CONFIG) : passwordHash;
 		await db.insert(users).values({
 			id,
 			name: u.name,
 			email: u.email,
 			username: u.username,
-			passwordHash,
+			passwordHash: userPasswordHash,
 			role: u.role,
 			createdAt: daysAgo(u.daysAgo),
 			updatedAt: daysAgo(u.daysAgo),
 		});
 	}
-	console.log(`  Created ${userData.length} users (password: password123)`);
+	console.log(`  Created ${userData.length} users (default password: password123)`);
 
 	// --- PAGES ---
 	// ~65 pages with realistic distribution across months and statuses
@@ -1262,7 +1275,9 @@ export async function seedDemo() {
 		`  ${pageData.length} pages (${pageData.filter((p) => p.status === "published").length} published, ${pageData.filter((p) => p.status === "draft").length} draft, ${pageData.filter((p) => p.status === "archived").length} archived)`
 	);
 	console.log(`  ${notificationData.length} notifications`);
-	console.log("Login: admin@svelteforge.dev / password123 (or any user with password123)");
+	console.log("Login: username 'demo' / password 'SvelteDemo2026!' (viewer, what the UI pre-fills)");
+	console.log("       username 'admin' / password 'password123' (admin — use to access demo reset)");
+	console.log("       any other seeded username / 'password123'");
 }
 
 // Auto-run when invoked as a CLI (e.g. `tsx src/lib/server/db/seed.ts`)
