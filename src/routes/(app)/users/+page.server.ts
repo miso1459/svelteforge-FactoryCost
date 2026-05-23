@@ -24,8 +24,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 	return { users: allUsers, currentUserId: locals.user.id };
 };
 
+function requireAdmin(locals: App.Locals) {
+	if (locals.user?.role !== "admin") {
+		return fail(403, { message: "Admin access required" });
+	}
+	return null;
+}
+
 export const actions: Actions = {
-	create: async ({ request }) => {
+	create: async ({ request, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 		const formData = await request.formData();
 		const name = formData.get("name");
 		const email = formData.get("email");
@@ -82,7 +91,9 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	update: async ({ request }) => {
+	update: async ({ request, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 		const formData = await request.formData();
 		const id = formData.get("id");
 		const name = formData.get("name");
@@ -132,6 +143,8 @@ export const actions: Actions = {
 	},
 
 	delete: async ({ request, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 		const formData = await request.formData();
 		const id = formData.get("id");
 
@@ -166,6 +179,8 @@ export const actions: Actions = {
 	},
 
 	bulkDelete: async ({ request, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 		const formData = await request.formData();
 		const idsRaw = formData.get("ids");
 
