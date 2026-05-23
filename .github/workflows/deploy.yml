@@ -31,6 +31,8 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
           rsync -azP --delete -e "ssh -i ~/.ssh/deploy_key" build/ deploy@${{ secrets.REMOTE_HOST }}:/var/www/svelteforge/build/
+          # Also sync src/ so the demo-reset cron runs the latest seed script.
+          rsync -azP --delete -e "ssh -i ~/.ssh/deploy_key" src/ deploy@${{ secrets.REMOTE_HOST }}:/var/www/svelteforge/src/
           rm ~/.ssh/deploy_key
 
       - name: Restart PM2

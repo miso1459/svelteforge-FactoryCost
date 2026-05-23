@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { db } from "./index.js";
 import { users, pages, notifications, appSettings, sessions } from "./schema.js";
 import { hash } from "@node-rs/argon2";
@@ -22,7 +23,7 @@ function randomInt(min: number, max: number): number {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-async function seed() {
+export async function seedDemo() {
 	console.log("Clearing existing data...");
 	db.delete(notifications).run();
 	db.delete(pages).run();
@@ -1264,7 +1265,10 @@ async function seed() {
 	console.log("Login: admin@svelteforge.dev / password123 (or any user with password123)");
 }
 
-seed().catch((err) => {
-	console.error("Seed failed:", err);
-	process.exit(1);
-});
+// Auto-run when invoked as a CLI (e.g. `tsx src/lib/server/db/seed.ts`)
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+	seedDemo().catch((err) => {
+		console.error("Seed failed:", err);
+		process.exit(1);
+	});
+}

@@ -22,6 +22,7 @@
 	import AlertTriangleIcon from "@lucide/svelte/icons/alert-triangle";
 	import CalendarIcon from "@lucide/svelte/icons/calendar";
 	import WrenchIcon from "@lucide/svelte/icons/wrench";
+	import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
 
 	let { data, form } = $props();
 
@@ -35,6 +36,7 @@
 				session: "Session revoked",
 				sessions: "All other sessions revoked",
 				notifications: "Notification preferences saved",
+				resetDemo: "Demo data reset",
 			};
 			toast.success(messages[form.action as string] ?? "Saved");
 		}
@@ -107,6 +109,9 @@
 			<Tabs.Trigger value="notifications">Notifications</Tabs.Trigger>
 			{#if data.isAdmin}
 				<Tabs.Trigger value="application">Application</Tabs.Trigger>
+			{/if}
+			{#if data.isAdmin && data.isDemoMode}
+				<Tabs.Trigger value="demo">Demo</Tabs.Trigger>
 			{/if}
 		</Tabs.List>
 
@@ -311,6 +316,39 @@
 							</div>
 
 							<Button type="submit">Save Settings</Button>
+						</form>
+					</Card.Content>
+				</Card.Root>
+			</Tabs.Content>
+		{/if}
+
+		{#if data.isAdmin && data.isDemoMode}
+			<Tabs.Content value="demo" class="space-y-6 pt-4">
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Demo Data Reset</Card.Title>
+						<Card.Description>
+							This instance runs in demo mode. Visitors can modify users, pages, and settings.
+							Resetting wipes all data and re-seeds the original demo content.
+						</Card.Description>
+					</Card.Header>
+					<Card.Content class="space-y-4">
+						<div class="bg-muted/50 rounded-lg border p-4 text-sm">
+							<p class="font-medium">What gets reset:</p>
+							<ul class="text-muted-foreground mt-2 list-inside list-disc space-y-1">
+								<li>All users (replaced with the seeded demo accounts)</li>
+								<li>All pages (replaced with the seeded demo content)</li>
+								<li>All notifications, sessions, and app settings</li>
+							</ul>
+							<p class="text-muted-foreground mt-3 text-xs">
+								Runs automatically every hour at HH:10 UTC. You can also trigger it manually.
+							</p>
+						</div>
+						<form method="POST" action="?/resetDemo" use:enhance>
+							<Button type="submit" variant="destructive">
+								<RotateCcwIcon class="mr-2 size-4" />
+								Reset Demo Data Now
+							</Button>
 						</form>
 					</Card.Content>
 				</Card.Root>

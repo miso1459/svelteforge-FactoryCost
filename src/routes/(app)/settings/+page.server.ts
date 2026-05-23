@@ -1,10 +1,13 @@
 import { invalidateSession } from "$lib/server/auth.js";
 import { db } from "$lib/server/db/index.js";
 import { users, sessions, appSettings } from "$lib/server/db/schema.js";
+import { seedDemo } from "$lib/server/db/seed.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { hash, verify } from "@node-rs/argon2";
 import { eq, and, ne } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
+
+const DEMO_MODE = process.env.DEMO_MODE === "true";
 
 const defaultSettings: Record<string, string> = {
 	siteName: "SvelteForge Admin",
@@ -79,6 +82,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		profile,
 		settings,
 		isAdmin: user.role === "admin",
+		isDemoMode: DEMO_MODE,
 		sessions: userSessions,
 		currentSessionId: locals.session!.id,
 		notificationPrefs: notifPrefs,
@@ -231,6 +235,24 @@ export const actions: Actions = {
 		}
 
 		return { success: true, action: "sessions" };
+	},
+
+	resetDemo: async ({ locals }) => {
+		if (!DEMO_MODE) {
+			return fail(403, { message: "Demo reset is disabled on this instance" });
+		}
+		if (locals.user?.role !== "admin") {
+			return fail(403, { message: "Admin access required" });
+		}
+
+		try {
+			await seedDemo();
+		} catch (err) {
+			console.error("Demo reset failed:", err);
+			return fail(500, { message: "Reset failed — check server logs" });
+		}
+
+		return { success: true, action: "resetDemo" };
 	},
 
 	updateNotificationPrefs: async ({ request, locals }) => {
