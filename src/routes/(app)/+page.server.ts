@@ -1,9 +1,12 @@
+import { redirect } from "@sveltejs/kit";
 import { db } from "$lib/server/db/index.js";
 import { users, sessions, pages, notifications, appSettings } from "$lib/server/db/schema.js";
 import { sql, eq, gt, desc, or, isNull } from "drizzle-orm";
 import type { PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.user) redirect(302, "/login");
+
 	const now = Date.now();
 	const thisMonthStart = new Date();
 	thisMonthStart.setDate(1);
@@ -107,7 +110,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	// Recent notifications for dashboard feed
 	const userNotifFilter = or(
-		eq(notifications.userId, locals.user!.id),
+		eq(notifications.userId, locals.user.id),
 		isNull(notifications.userId)
 	);
 	const recentNotifications = await db

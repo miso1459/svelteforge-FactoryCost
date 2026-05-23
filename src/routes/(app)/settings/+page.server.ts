@@ -1,7 +1,7 @@
 import { invalidateSession } from "$lib/server/auth.js";
 import { db } from "$lib/server/db/index.js";
 import { users, sessions, appSettings } from "$lib/server/db/schema.js";
-import { fail } from "@sveltejs/kit";
+import { fail, redirect } from "@sveltejs/kit";
 import { hash, verify } from "@node-rs/argon2";
 import { eq, and, ne } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
@@ -23,7 +23,8 @@ const notificationPrefKeys = [
 ];
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const user = locals.user!;
+	if (!locals.user) redirect(302, "/login");
+	const user = locals.user;
 
 	// Load profile data (without password)
 	const [profile] = await db

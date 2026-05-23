@@ -1,14 +1,16 @@
 import { db } from "$lib/server/db/index.js";
 import { notifications } from "$lib/server/db/schema.js";
-import { fail } from "@sveltejs/kit";
+import { fail, redirect } from "@sveltejs/kit";
 import { eq, and, or, isNull, desc } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.user) redirect(302, "/login");
+
 	const items = await db
 		.select()
 		.from(notifications)
-		.where(or(eq(notifications.userId, locals.user!.id), isNull(notifications.userId)))
+		.where(or(eq(notifications.userId, locals.user.id), isNull(notifications.userId)))
 		.orderBy(desc(notifications.createdAt));
 
 	return { notifications: items };

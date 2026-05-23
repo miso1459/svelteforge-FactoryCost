@@ -1,13 +1,14 @@
 import { db } from "$lib/server/db/index.js";
 import { users, sessions, pages, notifications, appSettings } from "$lib/server/db/schema.js";
 import { sql } from "drizzle-orm";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 import { statSync } from "fs";
 import { resolve } from "path";
 import type { PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (locals.user!.role !== "admin") {
+	if (!locals.user) redirect(302, "/login");
+	if (locals.user.role !== "admin") {
 		error(403, "Admin access required");
 	}
 
