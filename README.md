@@ -528,7 +528,64 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
+
+# Optional -- enable demo-mode protections (see Demo Mode section below)
+DEMO_MODE=false
 ```
+
+### Demo Mode
+
+Set `DEMO_MODE=true` when running a public demo of the dashboard (for
+example, the live site at `svelteforge.dashboardpack.com`). This unlocks
+two things that are invisible in a normal deployment:
+
+1. **Admin-only "Demo" tab in Settings** with a *Reset Demo Data Now*
+   button that wipes the database and re-seeds it from
+   [`src/lib/server/db/seed.ts`](src/lib/server/db/seed.ts).
+2. **Self-modification guard on the `demo` user.** The seed creates a
+   shared `demo` / `SvelteDemo2026!` viewer account that the login page
+   pre-fills. When `DEMO_MODE=true`, the `updateProfile` and
+   `changePassword` settings actions refuse to touch the `demo` account
+   so one visitor can't rename it or rotate its password and lock
+   everyone else out.
+
+For a fully automated demo, run the seed on a schedule. The reference
+preview server uses a deploy-user crontab plus a small wrapper:
+
+```bash
+# /usr/local/bin/svelteforge-reset-demo
+#!/usr/bin/env bash
+set -euo pipefail
+[ "${DEMO_MODE:-false}" = "true" ] || { echo "DEMO_MODE not enabled, refusing"; exit 1; }
+cd /var/www/svelteforge
+exec /usr/bin/pnpm db:seed
+
+# crontab -e (as the deploy user)
+10 * * * * /usr/local/bin/svelteforge-reset-demo >> /var/log/svelteforge-reset.log 2>&1
+```
+
+To make sure PM2 picks up `DEMO_MODE` across restarts, run from an
+ecosystem file rather than `pm2 start build/index.js` directly:
+
+```js
+// ecosystem.config.cjs
+module.exports = {
+  apps: [{
+    name: "svelteforge",
+    script: "build/index.js",
+    cwd: "/var/www/svelteforge",
+    env: { NODE_ENV: "production", PORT: 3000, DEMO_MODE: "true" },
+  }],
+};
+```
+
+```bash
+pm2 delete svelteforge && pm2 start ecosystem.config.cjs && pm2 save
+```
+
+Leave `DEMO_MODE` unset (or `false`) on real deployments -- the reset
+button and demo-user guard stay hidden, behaving as a normal admin
+dashboard.
 
 ---
 
