@@ -6,6 +6,7 @@ import type { PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) redirect(302, "/login");
+	if (locals.user.role !== "admin") redirect(302, "/home");
 
 	const now = Date.now();
 	const thisMonthStart = new Date();
