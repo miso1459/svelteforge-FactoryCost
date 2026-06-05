@@ -28,6 +28,9 @@
 
 	const selectedLabel = $derived(items.find((i) => i.code === value)?.value ?? "");
 
+	const maxCodeLen = $derived(Math.max(...items.map((i) => i.code.length)));
+	const codeStyle = $derived(`min-width: ${maxCodeLen}ch;`);
+
 	const filtered = $derived(() => {
 		if (!search.trim()) return items;
 		const q = search.toLowerCase();
@@ -90,9 +93,9 @@
 						data-selected={item.code === value || undefined}
 						onclick={() => select(item.code)}
 					>
-						<span class="flex items-center justify-between gap-3">
-							<span class="text-muted-foreground font-mono text-xs">{item.code}</span>
-							<span class="font-medium">{item.value}</span>
+						<span class="flex items-center gap-2">
+							<span class="text-muted-foreground font-mono text-xs shrink-0" style={codeStyle}>{item.code}</span>
+							<span class="font-medium truncate">{item.value}</span>
 						</span>
 					</button>
 				{/each}
