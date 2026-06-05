@@ -38,6 +38,7 @@
 		readonly: "border-black dark:border-white border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
 	};
 
+	let descRef = $state<HTMLInputElement | null>(null);
 	let itemAcct = $state("");
 	let dateValidStr = $state("");
 
@@ -54,6 +55,10 @@
 			} else {
 				itemAcct = "";
 				dateValidStr = "";
+			}
+			// Auto-focus Desc when PK is readonly (edit mode)
+			if (isReadonly && descRef) {
+				requestAnimationFrame(() => descRef?.focus());
 			}
 		}
 	});
@@ -97,7 +102,7 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="desc" class="font-medium text-amber-600 dark:text-amber-400">Desc *</Label>
-					<Input id="desc" name="desc" value={data?.desc ?? ""} required class={inputClasses.required} />
+					<Input id="desc" name="desc" value={data?.desc ?? ""} required class={inputClasses.required} bind:ref={descRef} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="remark" class="text-muted-foreground">Remark</Label>
