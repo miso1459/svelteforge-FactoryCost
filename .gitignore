@@ -27,3 +27,5 @@ vite.config.ts.timestamp-*
 *.db-journal
 *.db-wal
 *.db-shm
+.omo/
+graphify-out/
