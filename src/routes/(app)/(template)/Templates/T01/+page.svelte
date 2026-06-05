@@ -229,10 +229,10 @@
 
 	<!-- Table -->
 	<div class="w-full overflow-x-auto rounded-md border">
-		<Table.Root class="w-full">
+		<Table.Root class="whitespace-nowrap">
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="sticky left-0 z-10 w-[40px] bg-background">
+					<Table.Head class="sticky left-0 z-[1] w-[40px] bg-background">
 						<input
 							type="checkbox"
 							checked={paginated.length > 0 && selectedIds.size === paginated.length}
@@ -252,13 +252,13 @@
 							</button>
 						</Table.Head>
 					{/each}
-					<Table.Head class="sticky right-0 z-10 w-[100px] bg-background">Actions</Table.Head>
+					<Table.Head class="sticky right-0 z-[1] w-[100px] bg-background">Actions</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
 				{#each paginated as record (record.code)}
 					<Table.Row class={selectedIds.has(record.code) ? "bg-muted/50" : ""}>
-						<Table.Cell class="sticky left-0 z-10 bg-background">
+						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
 								type="checkbox"
 								checked={selectedIds.has(record.code)}
@@ -275,7 +275,7 @@
 						<Table.Cell class="text-muted-foreground">{record.updatedBy}</Table.Cell>
 						<Table.Cell class="text-muted-foreground text-sm">{formatDateTime(record.createdAt)}</Table.Cell>
 						<Table.Cell class="text-muted-foreground text-sm">{formatDateTime(record.updatedAt)}</Table.Cell>
-						<Table.Cell class="sticky right-0 z-10 bg-background">
+						<Table.Cell class="sticky right-0 z-[1] bg-background">
 							<div class="flex items-center gap-1">
 								<Button variant="ghost" size="icon" class="size-8" onclick={() => openEdit(record)}>
 									<PencilIcon class="size-4" />
