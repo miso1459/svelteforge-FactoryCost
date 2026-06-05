@@ -28,9 +28,6 @@
 
 	const selectedLabel = $derived(items.find((i) => i.code === value)?.value ?? "");
 
-	const maxCodeLen = $derived(Math.max(...items.map((i) => i.code.length)));
-	const codeStyle = $derived(`min-width: ${maxCodeLen}ch;`);
-
 	const filtered = $derived(() => {
 		if (!search.trim()) return items;
 		const q = search.toLowerCase();
@@ -39,6 +36,10 @@
 				i.code.toLowerCase().includes(q) || i.value.toLowerCase().includes(q)
 		);
 	});
+
+	const visibleItems = $derived(filtered());
+	const maxCodeLen = $derived(visibleItems.length > 0 ? Math.max(...visibleItems.map((i) => i.code.length)) : 1);
+	const codeStyle = $derived(`min-width: ${maxCodeLen}ch;`);
 
 	function select(code: string) {
 		value = code;
@@ -84,10 +85,10 @@
 			{/if}
 		</div>
 		<ScrollArea.Root class="max-h-60">
-			{#if filtered().length === 0}
+			{#if visibleItems.length === 0}
 				<div class="text-muted-foreground py-6 text-center text-sm">No results found.</div>
 			{:else}
-				{#each filtered() as item (item.code)}
+				{#each visibleItems as item (item.code)}
 					<button
 						class="hover:bg-accent hover:text-accent-foreground data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground w-full px-3 py-2 text-left text-sm cursor-pointer"
 						data-selected={item.code === value || undefined}
