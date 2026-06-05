@@ -35,7 +35,7 @@
 		pk: "border-blue-400 focus-visible:ring-blue-400",
 		required: "border-amber-400 focus-visible:ring-amber-400",
 		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40",
-		readonly: "border-black dark:border-white border-2 bg-muted/30 pointer-events-none",
+		readonly: "border-black dark:border-white border-2 bg-muted/60 pointer-events-none",
 	};
 
 	let itemAcct = $state("");
