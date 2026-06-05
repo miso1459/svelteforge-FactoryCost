@@ -26,6 +26,11 @@ const roleDefinitions = [
 		description: "Read-only access. Can view content and their own profile.",
 		permissions: ["View content", "View dashboard", "Edit own profile"],
 	},
+	{
+		name: "guest" as const,
+		description: "Limited access. Can view public pages and manage own profile.",
+		permissions: ["View public pages", "Edit own profile"],
+	},
 ];
 
 export const load: PageServerLoad = async () => {
@@ -57,7 +62,7 @@ export const actions: Actions = {
 		if (typeof userId !== "string") {
 			return fail(400, { message: "User ID is required" });
 		}
-		if (typeof newRole !== "string" || !["admin", "editor", "viewer"].includes(newRole)) {
+		if (typeof newRole !== "string" || !["admin", "editor", "viewer", "guest"].includes(newRole)) {
 			return fail(400, { message: "Invalid role" });
 		}
 
@@ -75,7 +80,7 @@ export const actions: Actions = {
 
 		await db
 			.update(users)
-			.set({ role: newRole as "admin" | "editor" | "viewer", updatedAt: new Date() })
+			.set({ role: newRole as "admin" | "editor" | "viewer" | "guest", updatedAt: new Date() })
 			.where(eq(users.id, userId));
 
 		return { success: true };
