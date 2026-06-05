@@ -12,6 +12,7 @@
 		value: string;
 		placeholder?: string;
 		disabled?: boolean;
+		class?: string;
 	};
 
 	let {
@@ -19,6 +20,7 @@
 		value = $bindable(""),
 		placeholder = "Select...",
 		disabled = false,
+		class: className = "",
 	}: Props = $props();
 
 	let open = $state(false);
@@ -56,7 +58,7 @@
 			variant="outline"
 			role="combobox"
 			aria-expanded={open}
-			class="w-full justify-between font-normal"
+			class={["w-full justify-between font-normal", className].filter(Boolean).join(" ")}
 			{disabled}
 		>
 			<span class={selectedLabel ? "" : "text-muted-foreground"}>
