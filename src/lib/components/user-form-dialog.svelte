@@ -76,14 +76,15 @@
 				{/if}
 				<div class="grid gap-2">
 					<Label for="role">Role</Label>
-					<Select.Root name="role" type="single" value={user?.role ?? "viewer"}>
+					<Select.Root name="role" type="single" value={user?.role ?? "guest"}>
 						<Select.Trigger>
-							<span>{user?.role ?? "viewer"}</span>
+							<span>{user?.role ?? "guest"}</span>
 						</Select.Trigger>
 						<Select.Content>
 							<Select.Item value="admin">Admin</Select.Item>
 							<Select.Item value="editor">Editor</Select.Item>
 							<Select.Item value="viewer">Viewer</Select.Item>
+							<Select.Item value="guest">Guest</Select.Item>
 						</Select.Content>
 					</Select.Root>
 				</div>
