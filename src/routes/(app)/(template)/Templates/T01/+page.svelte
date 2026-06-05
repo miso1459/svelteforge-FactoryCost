@@ -229,7 +229,7 @@
 
 	<!-- Table -->
 	<div class="w-full overflow-x-auto rounded-md border">
-		<Table.Root class="whitespace-nowrap">
+		<Table.Root class="w-full table-fixed whitespace-nowrap">
 			<Table.Header>
 				<Table.Row>
 					<Table.Head class="sticky left-0 z-[1] w-[40px] bg-background">
