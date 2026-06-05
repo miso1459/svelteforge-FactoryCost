@@ -42,12 +42,8 @@ toast.success(messages[form.action as string] ?? "Saved");
 </div>
 <div class="grid gap-2">
 <Label for="email">Email</Label>
-<Input id="email" name="email" type="email" value={data.profile.email} required />
-</div>
-<div class="grid gap-2">
-<Label>Username</Label>
-<Input value={data.profile.username} disabled />
-<p class="text-muted-foreground text-xs">Username cannot be changed.</p>
+<Input id="email" name="email" type="email" value={data.profile.email} readonly />
+<p class="text-muted-foreground text-xs">Email is read-only.</p>
 </div>
 <Button type="submit">Save Profile</Button>
 </form>
