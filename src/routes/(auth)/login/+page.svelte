@@ -1,15 +1,12 @@
 <script lang="ts">
-	import { enhance } from "$app/forms";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
-	import { Separator } from "$lib/components/ui/separator/index.js";
-	import ZapIcon from "@lucide/svelte/icons/zap";
+import * as Card from "$lib/components/ui/card/index.js";
+import { Button } from "$lib/components/ui/button/index.js";
+import { Separator } from "$lib/components/ui/separator/index.js";
+import ZapIcon from "@lucide/svelte/icons/zap";
 
-	let { form, data } = $props();
+let { form, data } = $props();
 
-	const providers = $derived(data.enabledProviders ?? []);
+const providers = $derived((data.enabledProviders ?? []).filter((provider) => provider === "google" || provider === "github"));
 </script>
 
 <svelte:head>
@@ -26,57 +23,22 @@
 					<ZapIcon class="size-6" />
 				</div>
 			</div>
-			<Card.Title class="text-2xl font-bold">Welcome back</Card.Title>
-			<Card.Description>Enter your credentials to access the dashboard</Card.Description>
+		<Card.Title class="text-2xl font-bold">Welcome Facktory Cost</Card.Title>
+		<Card.Description>Continue with Google to access the application</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<div class="bg-muted mb-4 rounded-md p-3 text-sm">
-				<p class="font-medium">Demo Access</p>
-				<p class="text-muted-foreground mt-1">
-					Credentials are pre-filled: <span class="font-mono font-semibold">demo</span> /
-					<span class="font-mono font-semibold">SvelteDemo2026!</span> — just click
-					<strong>Sign in</strong> to explore (read-only).
-				</p>
-			</div>
 			{#if form?.message}
 				<div class="bg-destructive/10 text-destructive mb-4 rounded-md p-3 text-sm">
 					{form.message}
 				</div>
 			{/if}
-			<form method="POST" use:enhance class="space-y-4">
-				<div class="space-y-2">
-					<Label for="username">Username</Label>
-					<Input
-						id="username"
-						name="username"
-						type="text"
-						placeholder="Enter your username"
-						required
-						autocomplete="username"
-						value="demo"
-					/>
-				</div>
-				<div class="space-y-2">
-					<Label for="password">Password</Label>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						placeholder="Enter your password"
-						required
-						autocomplete="current-password"
-						value="SvelteDemo2026!"
-					/>
-				</div>
-				<Button type="submit" class="w-full">Sign in</Button>
-			</form>
 			{#if providers.length > 0}
 				<div class="relative my-4">
 					<div class="absolute inset-0 flex items-center">
 						<Separator class="w-full" />
 					</div>
 					<div class="relative flex justify-center text-xs uppercase">
-						<span class="bg-card text-muted-foreground px-2">Or continue with</span>
+						<span class="bg-card text-muted-foreground px-2">Continue with</span>
 					</div>
 				</div>
 				<div class="flex flex-col gap-2">
@@ -116,19 +78,6 @@
 					{/if}
 				</div>
 			{/if}
-			<div class="mt-2 text-center">
-				<a
-					href="/forgot-password"
-					class="text-muted-foreground text-sm underline-offset-4 hover:underline"
-					>Forgot your password?</a
-				>
-			</div>
 		</Card.Content>
-		<Card.Footer class="justify-center">
-			<p class="text-muted-foreground text-sm">
-				Don't have an account?
-				<a href="/register" class="text-primary underline-offset-4 hover:underline">Register</a>
-			</p>
-		</Card.Footer>
 	</Card.Root>
 </div>
