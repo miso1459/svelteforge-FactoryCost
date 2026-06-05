@@ -69,7 +69,7 @@
 			label: "Management",
 			items: [
 				{ title: "Users", url: "/users", icon: UsersIcon },
-				// { title: "Content", url: "/content", icon: FileTextIcon },
+				{ title: "Content", url: "/content", icon: FileTextIcon },
 				{ title: "Roles", url: "/roles", icon: ShieldIcon },
 			],
 		},
@@ -189,12 +189,20 @@
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
-								<a href="/settings" {...props}>
+								<a href="/Common/profile" {...props}>
 									<UserIcon class="mr-2 size-4" />
 									Profile
 								</a>
 							{/snippet}
 						</DropdownMenu.Item>
+						<!-- <DropdownMenu.Item>
+							{#snippet child({ props })}
+								<a href="/settings" {...props}>
+									<UserIcon class="mr-2 size-4" />
+									Profile
+								</a>
+							{/snippet}
+						</DropdownMenu.Item> -->
 						<!-- <DropdownMenu.Item>
 							{#snippet child({ props })}
 								<a href="/notifications" {...props}>
