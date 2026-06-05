@@ -57,7 +57,7 @@
 		items: NavItem[];
 	};
 
-	const navigation: NavGroup[] = $derived([
+	const navigationAdmin: NavGroup[] = $derived([
 		{
 			label: "Overview",
 			items: [
@@ -87,7 +87,23 @@
 				{ title: "Documentation", url: "/docs", icon: BookOpenIcon },
 			],
 		},
+		{
+			label: "Templates",
+			items: [
+				{ title: "기본 관리", url: "/Templates/T01", icon: FileTextIcon },
+			],
+		},
 	]);
+
+	const navigationUser: NavGroup[] = $derived([
+		{
+			label: "Functions",
+			items: [
+				{ title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
+				{ title: "Analytics", url: "/analytics", icon: BarChart3Icon },
+			],
+		}
+	]);	
 </script>
 
 <Sidebar.Root>
@@ -115,7 +131,36 @@
 
 	{#if user.role === 'admin'}
 	<Sidebar.Content>
-		{#each navigation as group (group.label)}
+		{#each navigationAdmin as group (group.label)}
+			<Sidebar.Group>
+				<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
+				<Sidebar.GroupContent>
+					<Sidebar.Menu>
+						{#each group.items as item (item.title)}
+							<Sidebar.MenuItem>
+								<Sidebar.MenuButton>
+									{#snippet child({ props })}
+										<a href={item.url} {...props}>
+											<item.icon class="size-4" />
+											<span>{item.title}</span>
+										</a>
+									{/snippet}
+								</Sidebar.MenuButton>
+								{#if item.badge}
+									<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+								{/if}
+							</Sidebar.MenuItem>
+						{/each}
+					</Sidebar.Menu>
+				</Sidebar.GroupContent>
+			</Sidebar.Group>
+		{/each}
+	</Sidebar.Content>
+	{/if}
+
+	{#if user.role !== 'guest'}
+	<Sidebar.Content>
+		{#each navigationUser as group (group.label)}
 			<Sidebar.Group>
 				<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
 				<Sidebar.GroupContent>

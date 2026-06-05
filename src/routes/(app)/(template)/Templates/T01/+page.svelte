@@ -179,7 +179,7 @@
 	<title>Template 01 - SvelteForge Admin</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight">Template 01</h1>
