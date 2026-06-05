@@ -90,8 +90,10 @@
 						data-selected={item.code === value || undefined}
 						onclick={() => select(item.code)}
 					>
-						<div class="font-medium">{item.value}</div>
-						<div class="text-muted-foreground text-xs">{item.code}</div>
+						<span class="flex items-center justify-between gap-3">
+							<span class="text-muted-foreground font-mono text-xs">{item.code}</span>
+							<span class="font-medium">{item.value}</span>
+						</span>
 					</button>
 				{/each}
 			{/if}
