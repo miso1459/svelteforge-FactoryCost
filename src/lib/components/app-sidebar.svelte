@@ -69,7 +69,7 @@
 			label: "Management",
 			items: [
 				{ title: "Users", url: "/users", icon: UsersIcon },
-				{ title: "Content", url: "/content", icon: FileTextIcon },
+				// { title: "Content", url: "/content", icon: FileTextIcon },
 				{ title: "Roles", url: "/roles", icon: ShieldIcon },
 			],
 		},
@@ -103,8 +103,8 @@
 								<ZapIcon class="size-4" />
 							</div>
 							<div class="flex flex-col gap-0.5 leading-none">
-								<span class="font-semibold">SvelteForge</span>
-								<span class="text-xs">Admin Dashboard</span>
+								<span class="font-semibold">Factory Cost</span>
+								<!-- <span class="text-xs">Admin Dashboard</span> -->
 							</div>
 						</a>
 					{/snippet}
@@ -113,6 +113,7 @@
 		</Sidebar.Menu>
 	</Sidebar.Header>
 
+	{#if user.role === 'admin'}
 	<Sidebar.Content>
 		{#each navigation as group (group.label)}
 			<Sidebar.Group>
@@ -139,9 +140,10 @@
 			</Sidebar.Group>
 		{/each}
 	</Sidebar.Content>
+	{/if}
 
 	<!-- Go Pro CTA -->
-	<div class="px-3 py-2">
+	<!-- <div class="px-3 py-2">
 		<a
 			href="https://dashboardpack.com/theme-details/svelteforge-premium/?utm_source=svelteforge&utm_medium=sidebar&utm_content=go-pro-card&utm_campaign=upgrade-svelteforge-premium"
 			target="_blank"
@@ -155,7 +157,7 @@
 				class="text-muted-foreground size-3 transition-transform group-hover:translate-x-0.5"
 			/>
 		</a>
-	</div>
+	</div> -->
 
 	<Sidebar.Footer>
 		<Sidebar.Menu>
@@ -193,7 +195,7 @@
 								</a>
 							{/snippet}
 						</DropdownMenu.Item>
-						<DropdownMenu.Item>
+						<!-- <DropdownMenu.Item>
 							{#snippet child({ props })}
 								<a href="/notifications" {...props}>
 									<BellRingIcon class="mr-2 size-4" />
@@ -205,17 +207,17 @@
 									{/if}
 								</a>
 							{/snippet}
-						</DropdownMenu.Item>
-						<DropdownMenu.Item>
+						</DropdownMenu.Item> -->
+						<!-- <DropdownMenu.Item>
 							{#snippet child({ props })}
 								<a href="/settings" {...props}>
 									<SettingsIcon class="mr-2 size-4" />
 									Settings
 								</a>
 							{/snippet}
-						</DropdownMenu.Item>
+						</DropdownMenu.Item> -->
 						<DropdownMenu.Separator />
-						<DropdownMenu.Item>
+						<!-- <DropdownMenu.Item>
 							{#snippet child({ props })}
 								<a href="/lock" {...props}>
 									<LockIcon class="mr-2 size-4" />
@@ -239,7 +241,7 @@
 								</a>
 							{/snippet}
 						</DropdownMenu.Item>
-						<DropdownMenu.Separator />
+						<DropdownMenu.Separator /> -->
 						<DropdownMenu.Item
 							variant="destructive"
 							onclick={() => {
