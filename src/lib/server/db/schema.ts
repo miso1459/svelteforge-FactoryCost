@@ -7,9 +7,9 @@ export const users = sqliteTable("users", {
 	passwordHash: text("password_hash").notNull(),
 	name: text("name").notNull(),
 	avatarUrl: text("avatar_url"),
-	role: text("role", { enum: ["admin", "editor", "viewer"] })
+	role: text("role", { enum: ["admin", "editor", "viewer", "guest"] })
 		.notNull()
-		.default("viewer"),
+		.default("guest"),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.$defaultFn(() => new Date()),
@@ -91,6 +91,22 @@ export const oauthAccounts = sqliteTable(
 	(table) => [uniqueIndex("oauth_provider_user_idx").on(table.provider, table.providerUserId)]
 );
 
+export const template01 = sqliteTable("template01", {
+	code: text("code").primaryKey(),
+	desc: text("desc").notNull(),
+	remark: text("remark"),
+	itemAcct: text("item_acct").notNull(),
+	dateValid: integer("date_valid", { mode: "timestamp" }),
+	createdBy: text("created_by").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+});
+
 export const appSettings = sqliteTable("app_settings", {
 	key: text("key").primaryKey(),
 	value: text("value").notNull(),
@@ -107,3 +123,6 @@ export type NewPage = typeof pages.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type OAuthAccount = typeof oauthAccounts.$inferSelect;
 export type AppSetting = typeof appSettings.$inferSelect;
+
+export type Template01 = typeof template01.$inferSelect;
+export type NewTemplate01 = typeof template01.$inferInsert;
