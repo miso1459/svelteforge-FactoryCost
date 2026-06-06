@@ -24,7 +24,11 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 	import * as Avatar from "$lib/components/ui/avatar/index.js";
 	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "$lib/components/ui/collapsible/index.js";
+	import {
+		Collapsible,
+		CollapsibleTrigger,
+		CollapsibleContent,
+	} from "$lib/components/ui/collapsible/index.js";
 
 	type Props = {
 		user: {
@@ -38,16 +42,16 @@
 
 	let { user, notificationCount = 0 }: Props = $props();
 
-	let openGroups = $state(new Set<string>([
-		"Overview", "Management", "System", "Templates", "Functions"
-	]));
+	let openGroups = $state(
+		new Set<string>(["Overview", "Management", "System", "Templates", "Functions"])
+	);
 
-	function toggleGroup(label: string) {
+	function toggleGroup(label: string, open: boolean) {
 		const next = new Set(openGroups);
-		if (next.has(label)) {
-			next.delete(label);
-		} else {
+		if (open) {
 			next.add(label);
+		} else {
+			next.delete(label);
 		}
 		openGroups = next;
 	}
@@ -74,6 +78,14 @@
 	};
 
 	const navigationAdmin: NavGroup[] = $derived([
+		{
+			label: "Templates",
+			items: [
+				{ title: "기본 관리", url: "/Templates/T01", icon: FileTextIcon },
+				{ title: "기본 관리 날짜", url: "/Templates/T02", icon: FileTextIcon },
+				{ title: "기본 관리 History", url: "/Templates/T03", icon: FileTextIcon },
+			],
+		},
 		{
 			label: "Overview",
 			items: [
@@ -103,13 +115,6 @@
 				{ title: "Documentation", url: "/docs", icon: BookOpenIcon },
 			],
 		},
-		{
-			label: "Templates",
-			items: [
-				{ title: "기본 관리", url: "/Templates/T01", icon: FileTextIcon },
-				{ title: "기본 관리 날짜", url: "/Templates/T02", icon: FileTextIcon },
-			],
-		},
 	]);
 
 	const navigationUser: NavGroup[] = $derived([
@@ -119,8 +124,8 @@
 				{ title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
 				{ title: "Analytics", url: "/analytics", icon: BarChart3Icon },
 			],
-		}
-	]);	
+		},
+	]);
 </script>
 
 <Sidebar.Root>
@@ -146,88 +151,98 @@
 		</Sidebar.Menu>
 	</Sidebar.Header>
 
-	{#if user.role === 'admin'}
-	<Sidebar.Content>
-		{#each navigationAdmin as group (group.label)}
-			<Sidebar.Group>
-				<Collapsible open={openGroups.has(group.label)}>
-					<CollapsibleTrigger
-						onclick={() => toggleGroup(group.label)}
+	{#if user.role === "admin"}
+		<Sidebar.Content>
+			{#each navigationAdmin as group (group.label)}
+				<Sidebar.Group>
+					<Collapsible
+						open={openGroups.has(group.label)}
+						onOpenChange={(o) => toggleGroup(group.label, o)}
 					>
-						<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
-							<ChevronRightIcon
-								class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(group.label) ? 'rotate-90' : ''}"
-							/>
-							<span class="text-sidebar-foreground">{group.label}</span>
-						</div>
-					</CollapsibleTrigger>
-					<CollapsibleContent>
-						<Sidebar.GroupContent>
-							<Sidebar.Menu>
-								{#each group.items as item (item.title)}
-									<Sidebar.MenuItem>
-										<Sidebar.MenuButton>
-											{#snippet child({ props })}
-												<a href={item.url} {...props}>
-													<item.icon class="size-4" />
-													<span>{item.title}</span>
-												</a>
-											{/snippet}
-										</Sidebar.MenuButton>
-										{#if item.badge}
-											<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
-										{/if}
-									</Sidebar.MenuItem>
-								{/each}
-							</Sidebar.Menu>
-						</Sidebar.GroupContent>
-					</CollapsibleContent>
-				</Collapsible>
-			</Sidebar.Group>
-		{/each}
-	</Sidebar.Content>
+						<CollapsibleTrigger>
+							<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
+								<ChevronRightIcon
+									class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(
+										group.label
+									)
+										? 'rotate-90'
+										: ''}"
+								/>
+								<span class="text-sidebar-foreground">{group.label}</span>
+							</div>
+						</CollapsibleTrigger>
+						<CollapsibleContent>
+							<Sidebar.GroupContent>
+								<Sidebar.Menu>
+									{#each group.items as item (item.title)}
+										<Sidebar.MenuItem>
+											<Sidebar.MenuButton>
+												{#snippet child({ props })}
+													<a href={item.url} {...props}>
+														<item.icon class="size-4" />
+														<span>{item.title}</span>
+													</a>
+												{/snippet}
+											</Sidebar.MenuButton>
+											{#if item.badge}
+												<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+											{/if}
+										</Sidebar.MenuItem>
+									{/each}
+								</Sidebar.Menu>
+							</Sidebar.GroupContent>
+						</CollapsibleContent>
+					</Collapsible>
+				</Sidebar.Group>
+			{/each}
+		</Sidebar.Content>
 	{/if}
 
-	{#if user.role !== 'guest'}
-	<Sidebar.Content>
-		{#each navigationUser as group (group.label)}
-			<Sidebar.Group>
-				<Collapsible open={openGroups.has(group.label)}>
-					<CollapsibleTrigger
-						onclick={() => toggleGroup(group.label)}
+	{#if user.role !== "guest"}
+		<Sidebar.Content>
+			{#each navigationUser as group (group.label)}
+				<Sidebar.Group>
+					<Collapsible
+						open={openGroups.has(group.label)}
+						onOpenChange={(o) => toggleGroup(group.label, o)}
 					>
-						<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
-							<ChevronRightIcon
-								class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(group.label) ? 'rotate-90' : ''}"
-							/>
-							<span class="text-sidebar-foreground">{group.label}</span>
-						</div>
-					</CollapsibleTrigger>
-					<CollapsibleContent>
-						<Sidebar.GroupContent>
-							<Sidebar.Menu>
-								{#each group.items as item (item.title)}
-									<Sidebar.MenuItem>
-										<Sidebar.MenuButton>
-											{#snippet child({ props })}
-												<a href={item.url} {...props}>
-													<item.icon class="size-4" />
-													<span>{item.title}</span>
-												</a>
-											{/snippet}
-										</Sidebar.MenuButton>
-										{#if item.badge}
-											<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
-										{/if}
-									</Sidebar.MenuItem>
-								{/each}
-							</Sidebar.Menu>
-						</Sidebar.GroupContent>
-					</CollapsibleContent>
-				</Collapsible>
-			</Sidebar.Group>
-		{/each}
-	</Sidebar.Content>
+						<CollapsibleTrigger>
+							<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
+								<ChevronRightIcon
+									class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(
+										group.label
+									)
+										? 'rotate-90'
+										: ''}"
+								/>
+								<span class="text-sidebar-foreground">{group.label}</span>
+							</div>
+						</CollapsibleTrigger>
+						<CollapsibleContent>
+							<Sidebar.GroupContent>
+								<Sidebar.Menu>
+									{#each group.items as item (item.title)}
+										<Sidebar.MenuItem>
+											<Sidebar.MenuButton>
+												{#snippet child({ props })}
+													<a href={item.url} {...props}>
+														<item.icon class="size-4" />
+														<span>{item.title}</span>
+													</a>
+												{/snippet}
+											</Sidebar.MenuButton>
+											{#if item.badge}
+												<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+											{/if}
+										</Sidebar.MenuItem>
+									{/each}
+								</Sidebar.Menu>
+							</Sidebar.GroupContent>
+						</CollapsibleContent>
+					</Collapsible>
+				</Sidebar.Group>
+			{/each}
+		</Sidebar.Content>
 	{/if}
 
 	<!-- Go Pro CTA -->
