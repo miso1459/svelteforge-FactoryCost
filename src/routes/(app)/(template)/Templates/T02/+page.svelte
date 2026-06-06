@@ -351,7 +351,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 			<Table.Body>
 				{#each paginated as record (compositeId(record))}
 					{@const rid = compositeId(record)}
-					<Table.Row class={selectedIds.has(rid) ? "bg-muted/50" : ""}>
+					<Table.Row class={selectedIds.has(rid) ? "bg-muted/50 [&>td]:align-top [&>td]:pt-2 [&>td]:pb-0" : "[&>td]:align-top [&>td]:pt-2 [&>td]:pb-0"}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
 								type="checkbox"
@@ -363,7 +363,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 						<Table.Cell class="font-medium">{formatDate(record.documentDt)}</Table.Cell>
 						<Table.Cell class="font-mono">{record.code}</Table.Cell>
 						<Table.Cell>{record.desc}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.remark ?? "—"}</Table.Cell>
+						<Table.Cell class="text-muted-foreground whitespace-pre-wrap max-w-[200px]">{record.remark ?? "—"}</Table.Cell>
 						<Table.Cell>{itemAcctLabel(record.itemAcct)}</Table.Cell>
 						<Table.Cell class="text-muted-foreground">{formatDate(record.dateValid)}</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">

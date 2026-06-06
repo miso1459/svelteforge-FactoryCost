@@ -172,6 +172,7 @@ export const masterItem = sqliteTable("Master_Item", {
 	itemCode: text("item_code").primaryKey(),
 	itemDesc: text("item_desc").notNull(),
 	itemSpec: text("item_spec"),
+	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
 	itemRemark: text("item_remark"),
 	itemAcct: text("item_acct").notNull(),
 	createdBy: text("created_by").notNull(),

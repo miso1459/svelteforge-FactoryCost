@@ -40,6 +40,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 		itemCode: string;
 		itemDesc: string;
 		itemSpec: string | null;
+		isActive: boolean;
 		itemRemark: string | null;
 		itemAcct: string;
 	} | null>(null);
@@ -65,6 +66,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 				r.itemDesc.toLowerCase().includes(search.toLowerCase()) ||
 				(r.itemSpec ?? "").toLowerCase().includes(search.toLowerCase()) ||
 				(r.itemRemark ?? "").toLowerCase().includes(search.toLowerCase()) ||
+				String(r.isActive).includes(search.toLowerCase()) ||
 				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase())
 		)
 	);
@@ -140,6 +142,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 			itemCode: record.itemCode,
 			itemDesc: record.itemDesc,
 			itemSpec: record.itemSpec,
+			isActive: record.isActive,
 			itemRemark: record.itemRemark,
 			itemAcct: record.itemAcct,
 		};
@@ -176,6 +179,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 			itemCode: r.itemCode,
 			itemDesc: r.itemDesc,
 			itemSpec: r.itemSpec ?? "",
+			isActive: r.isActive ? "Y" : "N",
 			itemRemark: r.itemRemark ?? "",
 		}));
 		if (format === "csv") exportToCSV(exportData, "Master_Item");
@@ -187,6 +191,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 		{ key: "itemCode", label: "Item Code" },
 		{ key: "itemDesc", label: "Item Desc" },
 		{ key: "itemSpec", label: "Item Spec" },
+		{ key: "isActive", label: "Is Active" },
 		{ key: "itemRemark", label: "Item Remark" },
 	];
 </script>
@@ -276,7 +281,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 			</Table.Header>
 			<Table.Body>
 				{#each paginated as record (record.itemCode)}
-					<Table.Row class={selectedIds.has(record.itemCode) ? "bg-muted/50" : ""}>
+					<Table.Row class={selectedIds.has(record.itemCode) ? "bg-muted/50 [&>td]:align-top [&>td]:pt-2 [&>td]:pb-0" : "[&>td]:align-top [&>td]:pt-2 [&>td]:pb-0"}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
 								type="checkbox"
@@ -289,7 +294,14 @@ import { Label } from "$lib/components/ui/label/index.js";
 						<Table.Cell class="font-medium font-mono">{record.itemCode}</Table.Cell>
 						<Table.Cell>{record.itemDesc}</Table.Cell>
 						<Table.Cell class="text-muted-foreground">{record.itemSpec ?? "—"}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.itemRemark ?? "—"}</Table.Cell>
+						<Table.Cell>
+							{#if record.isActive}
+								<span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+							{:else}
+								<span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">Inactive</span>
+							{/if}
+						</Table.Cell>
+						<Table.Cell class="text-muted-foreground whitespace-pre-wrap max-w-[200px]">{record.itemRemark ?? "—"}</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">
 							<div class="flex items-center gap-1">
 								<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit(record)}>
@@ -311,7 +323,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={7} class="h-24 text-center">
+						<Table.Cell colspan={8} class="h-24 text-center">
 							{search ? "No records match your search." : "No records found."}
 						</Table.Cell>
 					</Table.Row>

@@ -281,7 +281,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 			</Table.Header>
 			<Table.Body>
 				{#each paginated as record (record.code)}
-					<Table.Row class={selectedIds.has(record.code) ? "bg-muted/50" : ""}>
+					<Table.Row class={selectedIds.has(record.code) ? "bg-muted/50 [&>td]:align-top [&>td]:pt-2 [&>td]:pb-0" : "[&>td]:align-top [&>td]:pt-2 [&>td]:pb-0"}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
 								type="checkbox"
@@ -292,7 +292,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 						</Table.Cell>
 						<Table.Cell class="font-medium font-mono">{record.code}</Table.Cell>
 						<Table.Cell>{record.desc}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.remark ?? "—"}</Table.Cell>
+						<Table.Cell class="text-muted-foreground whitespace-pre-wrap max-w-[200px]">{record.remark ?? "—"}</Table.Cell>
 						<Table.Cell>{itemAcctLabel(record.itemAcct)}</Table.Cell>
 						<Table.Cell class="text-muted-foreground">{formatDate(record.dateValid)}</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">

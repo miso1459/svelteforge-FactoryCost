@@ -3,6 +3,7 @@
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
+	import { Switch } from "$lib/components/ui/switch/index.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { ITEM_ACCT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import { enhance } from "$app/forms";
@@ -11,6 +12,7 @@
 		itemCode: string;
 		itemDesc: string;
 		itemSpec: string | null;
+		isActive: boolean;
 		itemRemark: string | null;
 		itemAcct: string;
 	};
@@ -43,13 +45,16 @@
 			"border-purple-400 border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
 	};
 
+	let isActive = $state(true);
 	let itemAcct = $state("");
 
 	$effect(() => {
 		if (open) {
 			if (data) {
+				isActive = data.isActive;
 				itemAcct = data.itemAcct;
 			} else {
+				isActive = true;
 				itemAcct = "";
 			}
 		}
@@ -124,8 +129,23 @@
 					<Input id="itemSpec" name="itemSpec" value={data?.itemSpec ?? ""} class={inputClasses.optional} />
 				</div>
 				<div class="grid gap-2">
+					<Label for="isActive" class="text-muted-foreground">Is Active</Label>
+					<div class="flex items-center gap-3">
+						<input type="hidden" name="isActive" value={String(isActive)} />
+						<Switch bind:checked={isActive} />
+						<span class="text-sm {isActive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+							{isActive ? 'Active' : 'Inactive'}
+						</span>
+					</div>
+				</div>
+				<div class="grid gap-2">
 					<Label for="itemRemark" class="text-muted-foreground">Item Remark</Label>
-					<Input id="itemRemark" name="itemRemark" value={data?.itemRemark ?? ""} class={inputClasses.optional} />
+					<textarea
+						id="itemRemark"
+						name="itemRemark"
+						rows="3"
+						class="border-muted-foreground/20 focus-visible:ring-muted-foreground/40 flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+					>{data?.itemRemark ?? ""}</textarea>
 				</div>
 			</div>
 			<Dialog.Footer>

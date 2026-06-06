@@ -114,7 +114,12 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="remark" class="text-muted-foreground">Remark</Label>
-					<Input id="remark" name="remark" value={data?.remark ?? ""} class={inputClasses.optional} />
+					<textarea
+						id="remark"
+						name="remark"
+						rows="3"
+						class="border-muted-foreground/20 focus-visible:ring-muted-foreground/40 flex min-h-[60px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+					>{data?.remark ?? ""}</textarea>
 				</div>
 				<div class="grid gap-2">
 					<Label for="itemAcct" class="font-medium text-amber-600 dark:text-amber-400">Item Acct *</Label>

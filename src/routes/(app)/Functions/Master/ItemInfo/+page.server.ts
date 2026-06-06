@@ -23,6 +23,7 @@ export const actions: Actions = {
 		const itemCode = formData.get("itemCode");
 		const itemDesc = formData.get("itemDesc");
 		const itemSpec = formData.get("itemSpec");
+		const isActive = formData.get("isActive");
 		const itemRemark = formData.get("itemRemark");
 		const itemAcct = formData.get("itemAcct");
 
@@ -44,6 +45,7 @@ export const actions: Actions = {
 				itemCode,
 				itemDesc,
 				itemSpec: typeof itemSpec === "string" && itemSpec.trim() ? itemSpec : null,
+				isActive: isActive === "true",
 				itemRemark: typeof itemRemark === "string" && itemRemark.trim() ? itemRemark : null,
 				itemAcct,
 				createdBy: userName,
@@ -65,6 +67,7 @@ export const actions: Actions = {
 		const itemCode = formData.get("itemCode");
 		const itemDesc = formData.get("itemDesc");
 		const itemSpec = formData.get("itemSpec");
+		const isActive = formData.get("isActive");
 		const itemRemark = formData.get("itemRemark");
 		const itemAcct = formData.get("itemAcct");
 
@@ -84,6 +87,7 @@ export const actions: Actions = {
 				.set({
 					itemDesc,
 					itemSpec: typeof itemSpec === "string" && itemSpec.trim() ? itemSpec : null,
+					isActive: isActive === "true",
 					itemRemark: typeof itemRemark === "string" && itemRemark.trim() ? itemRemark : null,
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
