@@ -41,7 +41,7 @@
 	};
 
 	let documentDtStr = $state("");
-	let codeRef = $state<HTMLInputElement | null>(null);
+	let descRef = $state<HTMLInputElement | null>(null);
 	let itemAcct = $state("");
 	let dateValidStr = $state("");
 
@@ -61,9 +61,9 @@
 				itemAcct = "";
 				dateValidStr = "";
 			}
-			// Auto-focus Code when PK is readonly (edit mode)
-			if (isReadonly && codeRef) {
-				requestAnimationFrame(() => codeRef?.focus());
+			// Auto-focus Desc when PKs are readonly (edit mode)
+			if (isReadonly && descRef) {
+				requestAnimationFrame(() => descRef?.focus());
 			}
 		}
 	});
@@ -109,12 +109,12 @@
 					/>
 				</div>
 				<div class="grid gap-2">
-					<Label for="code" class="font-medium text-amber-600 dark:text-amber-400">Code *</Label>
-					<Input id="code" name="code" value={data?.code ?? ""} required class={inputClasses.required} bind:ref={codeRef} />
+					<Label for="code" class="font-semibold text-blue-600 dark:text-blue-400">Code (PK)</Label>
+					<Input id="code" name="code" value={data?.code ?? ""} required class={isReadonly ? inputClasses.readonly : inputClasses.pk} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="desc" class="font-medium text-amber-600 dark:text-amber-400">Desc *</Label>
-					<Input id="desc" name="desc" value={data?.desc ?? ""} required class={inputClasses.required} />
+					<Input id="desc" name="desc" value={data?.desc ?? ""} required class={inputClasses.required} bind:ref={descRef} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="remark" class="text-muted-foreground">Remark</Label>
