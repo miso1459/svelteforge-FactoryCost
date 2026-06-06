@@ -20,7 +20,7 @@ toast.success(messages[form.action as string] ?? "Saved");
 </script>
 
 <svelte:head>
-<title>Profile - SvelteForge Admin</title>
+<title>Profile - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="space-y-6">

@@ -190,7 +190,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - SvelteForge Admin</title>
+	<title>Dashboard - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="space-y-6">

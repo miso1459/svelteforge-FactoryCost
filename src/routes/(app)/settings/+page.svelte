@@ -93,7 +93,7 @@
 </script>
 
 <svelte:head>
-	<title>Settings - SvelteForge Admin</title>
+	<title>Settings - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="space-y-6">

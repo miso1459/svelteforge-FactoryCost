@@ -1254,7 +1254,7 @@ export async function seedDemo() {
 	// --- APP SETTINGS ---
 	console.log("Creating app settings...");
 	const settingsData = [
-		{ key: "siteName", value: "SvelteForge Admin" },
+		{ key: "siteName", value: "SvelteForge Factory Cost" },
 		{ key: "timezone", value: "America/New_York" },
 		{ key: "defaultRole", value: "viewer" },
 		{ key: "maintenanceMode", value: "false" },

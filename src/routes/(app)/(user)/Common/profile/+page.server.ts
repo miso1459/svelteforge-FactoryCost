@@ -18,7 +18,7 @@ function isProtectedDemoUser(username: string | undefined): boolean {
 }
 
 const defaultSettings: Record<string, string> = {
-	siteName: "SvelteForge Admin",
+	siteName: "SvelteForge Factory Cost",
 	timezone: "UTC",
 	defaultRole: "guest",
 	maintenanceMode: "false",
@@ -190,7 +190,7 @@ export const actions: Actions = {
 		const maintenanceMode = formData.get("maintenanceMode");
 
 		const entries: [string, string][] = [
-			["siteName", typeof siteName === "string" ? siteName : "SvelteForge Admin"],
+			["siteName", typeof siteName === "string" ? siteName : "SvelteForge Factory Cost"],
 			["timezone", typeof timezone === "string" ? timezone : "UTC"],
 			["defaultRole", typeof defaultRole === "string" ? defaultRole : "guest"],
 			["maintenanceMode", maintenanceMode === "on" ? "true" : "false"],

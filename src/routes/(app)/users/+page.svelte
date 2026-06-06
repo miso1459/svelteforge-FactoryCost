@@ -165,7 +165,7 @@
 </script>
 
 <svelte:head>
-	<title>Users - SvelteForge Admin</title>
+	<title>Users - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="space-y-6">

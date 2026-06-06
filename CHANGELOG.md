@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to SvelteForge Admin are documented here.
+All notable changes to SvelteForge Factory Cost are documented here.
 
 ## v1.1.0 -- May 2026
 

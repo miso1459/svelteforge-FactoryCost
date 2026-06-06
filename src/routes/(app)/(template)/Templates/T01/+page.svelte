@@ -197,7 +197,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 </script>
 
 <svelte:head>
-	<title>Template 01 - SvelteForge Admin</title>
+	<title>Template 01 - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">

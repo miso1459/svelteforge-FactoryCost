@@ -19,20 +19,20 @@
 </script>
 
 <MetaTags
-	title="SvelteForge Admin"
-	titleTemplate="%s | SvelteForge Admin"
+	title="SvelteForge Factory Cost"
+	titleTemplate="%s | SvelteForge Factory Cost"
 	description="A full-featured admin dashboard built with SvelteKit 2, Svelte 5, Tailwind CSS 4, Drizzle ORM, and session-based auth."
 	openGraph={{
 		type: "website",
 		url: "https://svelteforge-admin.dev",
-		title: "SvelteForge Admin",
+		title: "SvelteForge Factory Cost",
 		description:
 			"A full-featured admin dashboard built with SvelteKit 2, Svelte 5, Tailwind CSS 4, Drizzle ORM, and session-based auth.",
-		siteName: "SvelteForge Admin",
+		siteName: "SvelteForge Factory Cost",
 	}}
 	twitter={{
 		cardType: "summary",
-		title: "SvelteForge Admin",
+		title: "SvelteForge Factory Cost",
 		description:
 			"A full-featured admin dashboard built with SvelteKit 2, Svelte 5, Tailwind CSS 4, Drizzle ORM, and session-based auth.",
 	}}

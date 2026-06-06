@@ -5,7 +5,7 @@
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
-	import Template02FormDialog from "./template02-form-dialog.svelte";
+	import Template03FormDialog from "./template03-form-dialog.svelte";
 	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import PencilIcon from "@lucide/svelte/icons/pencil";
@@ -41,19 +41,20 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	let fromDate = $state(dateStr(defaultFrom));
 	let toDate = $state(dateStr(today));
-	let createDate = $state(dateStr(today)); // for passing to create dialog
+	let createDate = $state(dateStr(today));
 
 	let search = $state("");
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let deleteOpen = $state(false);
-	let sortKey = $state<string>("documentDt");
+	let sortKey = $state<string>("id");
 	let sortDir = $state<"asc" | "desc">("desc");
 	let pageSize = $state(10);
 	let currentPage = $state(1);
 	let selectedIds = $state(new Set<string>());
 
 	let editData = $state<{
+		id: number;
 		documentDt: string;
 		code: string;
 		desc: string;
@@ -69,12 +70,6 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		createdAt: Date | null;
 		updatedAt: Date | null;
 	} | null>(null);
-
-	function pkFmt(dt: Date | null) {
-		if (!dt) return "";
-		const d = new Date(dt);
-		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-	}
 
 	// Resolve item_acct code to display value
 	function itemAcctLabel(code: string): string {
@@ -96,6 +91,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 	const filtered = $derived(
 		dateFiltered().filter(
 			(r) =>
+				String(r.id).includes(search) ||
 				r.code.toLowerCase().includes(search.toLowerCase()) ||
 				r.desc.toLowerCase().includes(search.toLowerCase()) ||
 				(r.remark ?? "").toLowerCase().includes(search.toLowerCase()) ||
@@ -143,10 +139,6 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		return sortDir === "asc" ? ArrowUpIcon : ArrowDownIcon;
 	}
 
-	function compositeId(r: typeof data.records[0]) {
-		return `${pkFmt(r.documentDt)}|${r.code}`;
-	}
-
 	function toggleSelect(id: string) {
 		const next = new Set(selectedIds);
 		if (next.has(id)) next.delete(id);
@@ -158,7 +150,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		if (selectedIds.size === paginated.length) {
 			selectedIds = new Set();
 		} else {
-			selectedIds = new Set(paginated.map((r) => compositeId(r)));
+			selectedIds = new Set(paginated.map((r) => String(r.id)));
 		}
 	}
 
@@ -180,7 +172,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	function openEdit(record: (typeof data.records)[0]) {
 		editData = {
-			documentDt: pkFmt(record.documentDt),
+			id: record.id,
+			documentDt: formatDate(record.documentDt),
 			code: record.code,
 			desc: record.desc,
 			remark: record.remark,
@@ -190,8 +183,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		editOpen = true;
 	}
 
-	function openDelete(dateStr: string, code: string) {
-		deleteId = `${dateStr}|${code}`;
+	function openDelete(recordId: number) {
+		deleteId = String(recordId);
 		deleteOpen = true;
 	}
 
@@ -221,6 +214,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	function handleExport(format: "csv" | "json") {
 		const exportData = filtered.map((r) => ({
+			id: r.id,
 			documentDt: formatDate(r.documentDt),
 			code: r.code,
 			desc: r.desc,
@@ -228,11 +222,12 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 			itemAcct: itemAcctLabel(r.itemAcct),
 			dateValid: formatDate(r.dateValid),
 		}));
-		if (format === "csv") exportToCSV(exportData, "template02");
-		else exportToJSON(exportData, "template02");
+		if (format === "csv") exportToCSV(exportData, "template03");
+		else exportToJSON(exportData, "template03");
 	}
 
 	const columns = [
+		{ key: "id", label: "ID" },
 		{ key: "documentDt", label: "Document Dt" },
 		{ key: "code", label: "Code" },
 		{ key: "desc", label: "Desc" },
@@ -243,13 +238,13 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 </script>
 
 <svelte:head>
-	<title>Template 02 - SvelteForge Factory Cost</title>
+	<title>Template 03 - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">Template 02</h1>
+			<h1 class="text-3xl font-bold tracking-tight">Template 03</h1>
 			<p class="text-muted-foreground">Manage template records with date range.</p>
 		</div>
 		<Button onclick={onOpenCreate}>
@@ -338,8 +333,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each paginated as record (compositeId(record))}
-					{@const rid = compositeId(record)}
+				{#each paginated as record (record.id)}
+					{@const rid = String(record.id)}
 					<Table.Row class={selectedIds.has(rid) ? "bg-muted/50" : ""}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
@@ -349,6 +344,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 								class="accent-primary size-4"
 							/>
 						</Table.Cell>
+						<Table.Cell class="font-mono text-xs">{record.id}</Table.Cell>
 						<Table.Cell class="font-medium">{formatDate(record.documentDt)}</Table.Cell>
 						<Table.Cell class="font-mono">{record.code}</Table.Cell>
 						<Table.Cell>{record.desc}</Table.Cell>
@@ -367,7 +363,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 									variant="ghost"
 									size="icon"
 									class="text-destructive size-8"
-									onclick={() => openDelete(rid, record.code)}
+									onclick={() => openDelete(record.id)}
 								>
 									<TrashIcon class="size-4" />
 								</Button>
@@ -376,7 +372,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={8} class="h-24 text-center">
+						<Table.Cell colspan={9} class="h-24 text-center">
 							{search ? "No records match your filters." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
@@ -387,8 +383,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 	</div>
 </div>
 
-<Template02FormDialog bind:open={createOpen} mode="create" defaultDt={createDate} />
-<Template02FormDialog bind:open={editOpen} mode="edit" data={editData} />
+<Template03FormDialog bind:open={createOpen} mode="create" defaultDt={createDate} />
+<Template03FormDialog bind:open={editOpen} mode="edit" data={editData} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
 
 <Dialog.Root bind:open={auditOpen}>

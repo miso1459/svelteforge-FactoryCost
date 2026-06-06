@@ -10,7 +10,7 @@ const providers = $derived((data.enabledProviders ?? []).filter((provider) => pr
 </script>
 
 <svelte:head>
-	<title>Login - SvelteForge Admin</title>
+	<title>Login - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="bg-background flex min-h-screen items-center justify-center p-4">

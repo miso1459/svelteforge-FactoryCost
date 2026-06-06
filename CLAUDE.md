@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SvelteForge Admin is a SvelteKit admin dashboard using Svelte 5, Tailwind CSS v4, custom session-based auth with Arctic OAuth, and Drizzle ORM with SQLite.
+SvelteForge Factory Cost is a SvelteKit admin dashboard using Svelte 5, Tailwind CSS v4, custom session-based auth with Arctic OAuth, and Drizzle ORM with SQLite.
 
 ## Commands
 
