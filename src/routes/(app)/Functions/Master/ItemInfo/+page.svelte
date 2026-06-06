@@ -24,6 +24,29 @@ import { Label } from "$lib/components/ui/label/index.js";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
 	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 
+	function parseFormatPattern(format: string): { decimalPlaces: number; useGrouping: boolean } {
+		const parts = format.split(".");
+		const fracPart = parts[1] || "";
+		const intPart = parts[0] || "";
+		const decimalPlaces = [...fracPart].filter((c) => c === "0" || c === "#").length;
+		const useGrouping = intPart.includes(",");
+		return { decimalPlaces, useGrouping };
+	}
+
+	function formatStdPrice(value: number | null, format: string): string {
+		if (value === null || value === undefined) return "—";
+		const { decimalPlaces, useGrouping } = parseFormatPattern(format);
+		try {
+			return new Intl.NumberFormat("en-US", {
+				minimumFractionDigits: decimalPlaces,
+				maximumFractionDigits: decimalPlaces,
+				useGrouping,
+			}).format(value);
+		} catch {
+			return value.toFixed(decimalPlaces);
+		}
+	}
+
 	let { data, form } = $props();
 
 	let search = $state("");
@@ -40,6 +63,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 		itemCode: string;
 		itemDesc: string;
 		itemSpec: string | null;
+		itemUnit: string | null;
+		stdPrice: number | null;
 		isActive: boolean;
 		itemRemark: string | null;
 		itemAcct: string;
@@ -65,6 +90,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 				r.itemCode.toLowerCase().includes(search.toLowerCase()) ||
 				r.itemDesc.toLowerCase().includes(search.toLowerCase()) ||
 				(r.itemSpec ?? "").toLowerCase().includes(search.toLowerCase()) ||
+				(r.itemUnit ?? "").toLowerCase().includes(search.toLowerCase()) ||
 				(r.itemRemark ?? "").toLowerCase().includes(search.toLowerCase()) ||
 				String(r.isActive).includes(search.toLowerCase()) ||
 				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase())
@@ -142,6 +168,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 			itemCode: record.itemCode,
 			itemDesc: record.itemDesc,
 			itemSpec: record.itemSpec,
+			itemUnit: record.itemUnit,
+			stdPrice: record.stdPrice,
 			isActive: record.isActive,
 			itemRemark: record.itemRemark,
 			itemAcct: record.itemAcct,
@@ -179,6 +207,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 			itemCode: r.itemCode,
 			itemDesc: r.itemDesc,
 			itemSpec: r.itemSpec ?? "",
+			itemUnit: r.itemUnit ?? "",
+			stdPrice: r.stdPrice ?? "",
 			isActive: r.isActive ? "Y" : "N",
 			itemRemark: r.itemRemark ?? "",
 		}));
@@ -191,6 +221,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 		{ key: "itemCode", label: "Item Code" },
 		{ key: "itemDesc", label: "Item Desc" },
 		{ key: "itemSpec", label: "Item Spec" },
+		{ key: "itemUnit", label: "Item Unit" },
+		{ key: "stdPrice", label: "Std Price" },
 		{ key: "isActive", label: "Is Active" },
 		{ key: "itemRemark", label: "Item Remark" },
 	];
@@ -294,6 +326,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 						<Table.Cell class="font-medium font-mono">{record.itemCode}</Table.Cell>
 						<Table.Cell>{record.itemDesc}</Table.Cell>
 						<Table.Cell class="text-muted-foreground">{record.itemSpec ?? "—"}</Table.Cell>
+						<Table.Cell>{record.itemUnit ?? "—"}</Table.Cell>
+						<Table.Cell class="text-right font-mono">{formatStdPrice(record.stdPrice, data.formatPrice)}</Table.Cell>
 						<Table.Cell>
 							{#if record.isActive}
 								<span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
@@ -323,7 +357,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={8} class="h-24 text-center">
+						<Table.Cell colspan={10} class="h-24 text-center">
 							{search ? "No records match your search." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
@@ -334,8 +368,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 	</div>
 </div>
 
-<MasterItemFormDialog bind:open={createOpen} mode="create" />
-<MasterItemFormDialog bind:open={editOpen} mode="edit" data={editData} />
+<MasterItemFormDialog bind:open={createOpen} mode="create" formatPrice={data.formatPrice} />
+<MasterItemFormDialog bind:open={editOpen} mode="edit" data={editData} formatPrice={data.formatPrice} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
 
 <Dialog.Root bind:open={auditOpen}>

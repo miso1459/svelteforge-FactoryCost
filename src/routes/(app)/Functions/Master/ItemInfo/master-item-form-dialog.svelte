@@ -5,13 +5,15 @@
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { Switch } from "$lib/components/ui/switch/index.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
-	import { ITEM_ACCT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import { ITEM_ACCT, UNIT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import { enhance } from "$app/forms";
 
 	type MasterItemData = {
 		itemCode: string;
 		itemDesc: string;
 		itemSpec: string | null;
+		itemUnit: string | null;
+		stdPrice: number | null;
 		isActive: boolean;
 		itemRemark: string | null;
 		itemAcct: string;
@@ -21,15 +23,18 @@
 		open: boolean;
 		mode: "create" | "edit";
 		data?: MasterItemData | null;
+		formatPrice?: string;
 	};
 
-	let { open = $bindable(false), mode, data = null }: Props = $props();
+	let { open = $bindable(false), mode, data = null, formatPrice = "#,##0.00" }: Props = $props();
 
 	const title = $derived(mode === "create" ? "Add Record" : "Edit Record");
 	const action = $derived(mode === "create" ? "?/create" : "?/update");
 
 	// Flat list from ITEM_ACCT group
 	const acctItems: CodeValue[] = $derived(ITEM_ACCT.list);
+	// Flat list from UNIT group
+	const unitItems: CodeValue[] = $derived(UNIT.list);
 
 	const isReadonly = $derived(mode === "edit");
 
@@ -45,17 +50,66 @@
 			"border-purple-400 border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
 	};
 
+	function parseFormatPattern(format: string): { decimalPlaces: number; useGrouping: boolean } {
+		const parts = format.split(".");
+		const fracPart = parts[1] || "";
+		const intPart = parts[0] || "";
+		const decimalPlaces = [...fracPart].filter((c) => c === "0" || c === "#").length;
+		const useGrouping = intPart.includes(",");
+		return { decimalPlaces, useGrouping };
+	}
+
+	function formatStdPrice(value: number | null, format: string): string {
+		if (value === null || value === undefined) return "—";
+		const { decimalPlaces, useGrouping } = parseFormatPattern(format);
+		try {
+			return new Intl.NumberFormat("en-US", {
+				minimumFractionDigits: decimalPlaces,
+				maximumFractionDigits: decimalPlaces,
+				useGrouping,
+			}).format(value);
+		} catch {
+			return value.toFixed(decimalPlaces);
+		}
+	}
+
 	let isActive = $state(true);
 	let itemAcct = $state("");
+	let itemUnit = $state("");
+	let stdPriceRaw = $state<number | null>(null);
+	let stdPriceDisplay = $state("");
+
+	function onStdPriceInput(e: Event) {
+		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+		stdPriceRaw = raw ? Number(raw) : null;
+		stdPriceDisplay = raw;
+	}
+
+	function onStdPriceBlur() {
+		if (stdPriceRaw !== null) {
+			const { decimalPlaces } = parseFormatPattern(formatPrice);
+			stdPriceRaw = Number(stdPriceRaw.toFixed(decimalPlaces));
+			stdPriceDisplay = formatStdPrice(stdPriceRaw, formatPrice);
+		} else {
+			stdPriceDisplay = "";
+		}
+	}
 
 	$effect(() => {
 		if (open) {
 			if (data) {
 				isActive = data.isActive;
 				itemAcct = data.itemAcct;
+				itemUnit = data.itemUnit ?? "";
+				const { decimalPlaces } = parseFormatPattern(formatPrice);
+				stdPriceRaw = data.stdPrice != null ? Number(Number(data.stdPrice).toFixed(decimalPlaces)) : null;
+				stdPriceDisplay = data.stdPrice != null ? formatStdPrice(data.stdPrice, formatPrice) : "";
 			} else {
 				isActive = true;
 				itemAcct = "";
+				itemUnit = "";
+				stdPriceRaw = null;
+				stdPriceDisplay = "";
 			}
 		}
 	});
@@ -127,6 +181,39 @@
 				<div class="grid gap-2">
 					<Label for="itemSpec" class="text-muted-foreground">Item Spec</Label>
 					<Input id="itemSpec" name="itemSpec" value={data?.itemSpec ?? ""} class={inputClasses.optional} />
+				</div>
+				<div class="grid gap-2 relative">
+					<Label for="itemUnit" class="font-medium text-amber-600 dark:text-amber-400">Item Unit *</Label>
+					<div class="relative">
+						<input
+							type="text"
+							class="absolute inset-0 opacity-0 pointer-events-none cursor-default"
+							required
+							value={itemUnit}
+							tabindex="-1"
+							aria-hidden="true"
+						/>
+						<input type="hidden" name="itemUnit" value={itemUnit} />
+						<SearchableSelect
+							items={unitItems}
+							bind:value={itemUnit}
+							placeholder="Search unit..."
+							class={inputClasses.required}
+						/>
+					</div>
+				</div>
+				<div class="grid gap-2">
+					<Label for="stdPrice" class="text-muted-foreground">Std Price</Label>
+					<input type="hidden" name="stdPrice" value={stdPriceRaw ?? ""} />
+					<Input
+						id="stdPrice"
+						type="text"
+						inputmode="decimal"
+						value={stdPriceDisplay}
+						oninput={onStdPriceInput}
+						onblur={onStdPriceBlur}
+						class={inputClasses.optional}
+					/>
 				</div>
 				<div class="grid gap-2">
 					<Label for="isActive" class="text-muted-foreground">Is Active</Label>

@@ -18,3 +18,14 @@ export const ITEM_ACCT: CodeValueGroup = {
     { code: "50", value: "상품" },
   ],
 };
+
+export const UNIT: CodeValueGroup = {
+  title: "UNIT / 단위",
+  list: [
+    { code: "EA", value: "EA" },
+    { code: "Kg", value: "Kg" },
+    { code: "g", value: "g" },
+    { code: "l", value: "l" },
+    { code: "ml", value: "ml" },
+  ],
+};

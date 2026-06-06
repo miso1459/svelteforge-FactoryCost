@@ -22,6 +22,7 @@ const defaultSettings: Record<string, string> = {
 	timezone: "UTC",
 	defaultRole: "guest",
 	maintenanceMode: "false",
+	formatPrice: "#,##0.00",
 };
 
 const notificationPrefKeys = [
@@ -189,11 +190,13 @@ export const actions: Actions = {
 		const defaultRole = formData.get("defaultRole");
 		const maintenanceMode = formData.get("maintenanceMode");
 
+		const formDataFormatPrice = formData.get("formatPrice");
 		const entries: [string, string][] = [
 			["siteName", typeof siteName === "string" ? siteName : "SvelteForge Factory Cost"],
 			["timezone", typeof timezone === "string" ? timezone : "UTC"],
 			["defaultRole", typeof defaultRole === "string" ? defaultRole : "guest"],
 			["maintenanceMode", maintenanceMode === "on" ? "true" : "false"],
+			["formatPrice", typeof formDataFormatPrice === "string" ? formDataFormatPrice : "#,##0.00"],
 		];
 
 		for (const [key, value] of entries) {

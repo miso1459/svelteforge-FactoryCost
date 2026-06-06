@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
 	id: text("id").primaryKey(),
@@ -172,6 +172,8 @@ export const masterItem = sqliteTable("Master_Item", {
 	itemCode: text("item_code").primaryKey(),
 	itemDesc: text("item_desc").notNull(),
 	itemSpec: text("item_spec"),
+	itemUnit: text("item_unit"),
+	stdPrice: real("std_price"),
 	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
 	itemRemark: text("item_remark"),
 	itemAcct: text("item_acct").notNull(),

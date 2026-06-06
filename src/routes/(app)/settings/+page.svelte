@@ -306,6 +306,14 @@
 								<p class="text-muted-foreground text-xs">Role assigned to new users by default.</p>
 							</div>
 
+							<div class="grid gap-2">
+								<Label for="formatPrice">Number Format (Price)</Label>
+								<Input id="formatPrice" name="formatPrice" value={data.settings.formatPrice} />
+								<p class="text-muted-foreground text-xs">
+									Number format pattern, e.g. #,##0.00, #,##0.000000, 0.00
+								</p>
+							</div>
+
 							<div class="flex items-center justify-between rounded-lg border p-4">
 								<div class="space-y-0.5">
 									<Label>Maintenance Mode</Label>

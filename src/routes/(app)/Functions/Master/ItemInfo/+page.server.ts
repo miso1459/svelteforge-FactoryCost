@@ -1,8 +1,20 @@
 import { db } from "$lib/server/db/index.js";
-import { masterItem } from "$lib/server/db/schema.js";
+import { masterItem, appSettings } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq, inArray } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
+
+function parseFormatDecimalPlaces(format: string): number {
+	const parts = format.split(".");
+	const fracPart = parts[1] || "";
+	return [...fracPart].filter((c) => c === "0" || c === "#").length;
+}
+
+function roundByFormat(value: number | null | undefined, format: string): number | null {
+	if (value == null || isNaN(value)) return null;
+	const dp = parseFormatDecimalPlaces(format);
+	return Number(value.toFixed(dp));
+}
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) redirect(302, "/login");
@@ -12,7 +24,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.from(masterItem)
 		.orderBy(masterItem.createdAt);
 
-	return { records: allRecords, currentUserName: locals.user.name };
+	// Load formatPrice from app settings
+	const formatSetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatPrice"),
+	});
+	const formatPrice = formatSetting?.value ?? "#,##0.00";
+
+	return { records: allRecords, currentUserName: locals.user.name, formatPrice };
 };
 
 export const actions: Actions = {
@@ -23,6 +41,8 @@ export const actions: Actions = {
 		const itemCode = formData.get("itemCode");
 		const itemDesc = formData.get("itemDesc");
 		const itemSpec = formData.get("itemSpec");
+		const itemUnit = formData.get("itemUnit");
+		const stdPrice = formData.get("stdPrice");
 		const isActive = formData.get("isActive");
 		const itemRemark = formData.get("itemRemark");
 		const itemAcct = formData.get("itemAcct");
@@ -33,9 +53,18 @@ export const actions: Actions = {
 		if (typeof itemDesc !== "string" || itemDesc.length < 1 || itemDesc.length > 255) {
 			return fail(400, { message: "Item Desc is required (1-255 characters)" });
 		}
+		if (typeof itemUnit !== "string" || itemUnit.length < 1) {
+			return fail(400, { message: "Item Unit is required" });
+		}
 		if (typeof itemAcct !== "string" || itemAcct.length < 1) {
 			return fail(400, { message: "Item Acct is required" });
 		}
+
+		// Load formatPrice for rounding
+		const fmtSetting = await db.query.appSettings.findFirst({
+			where: eq(appSettings.key, "formatPrice"),
+		});
+		const fmt = fmtSetting?.value ?? "#,##0.00";
 
 		const userName = locals.user.name;
 		const now = new Date();
@@ -45,6 +74,8 @@ export const actions: Actions = {
 				itemCode,
 				itemDesc,
 				itemSpec: typeof itemSpec === "string" && itemSpec.trim() ? itemSpec : null,
+				itemUnit: typeof itemUnit === "string" && itemUnit.trim() ? itemUnit : null,
+				stdPrice: roundByFormat(stdPrice !== null && stdPrice !== "" ? Number(stdPrice) : null, fmt),
 				isActive: isActive === "true",
 				itemRemark: typeof itemRemark === "string" && itemRemark.trim() ? itemRemark : null,
 				itemAcct,
@@ -67,6 +98,8 @@ export const actions: Actions = {
 		const itemCode = formData.get("itemCode");
 		const itemDesc = formData.get("itemDesc");
 		const itemSpec = formData.get("itemSpec");
+		const itemUnit = formData.get("itemUnit");
+		const stdPrice = formData.get("stdPrice");
 		const isActive = formData.get("isActive");
 		const itemRemark = formData.get("itemRemark");
 		const itemAcct = formData.get("itemAcct");
@@ -81,12 +114,20 @@ export const actions: Actions = {
 			return fail(400, { message: "Item Acct is required" });
 		}
 
+		// Load formatPrice for rounding
+		const fmtSetting = await db.query.appSettings.findFirst({
+			where: eq(appSettings.key, "formatPrice"),
+		});
+		const fmt = fmtSetting?.value ?? "#,##0.00";
+
 		try {
 			await db
 				.update(masterItem)
 				.set({
 					itemDesc,
 					itemSpec: typeof itemSpec === "string" && itemSpec.trim() ? itemSpec : null,
+					itemUnit: typeof itemUnit === "string" && itemUnit.trim() ? itemUnit : null,
+					stdPrice: roundByFormat(stdPrice !== null && stdPrice !== "" ? Number(stdPrice) : null, fmt),
 					isActive: isActive === "true",
 					itemRemark: typeof itemRemark === "string" && itemRemark.trim() ? itemRemark : null,
 					updatedBy: locals.user.name,
