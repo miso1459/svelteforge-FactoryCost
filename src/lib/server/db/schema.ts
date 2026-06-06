@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex, primaryKey } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
 	id: text("id").primaryKey(),
@@ -138,6 +138,27 @@ export const appSettings = sqliteTable("app_settings", {
 		.$defaultFn(() => new Date()),
 });
 
+export const menus = sqliteTable("menus", {
+	id: text("id").primaryKey(),
+	type: text("type", { enum: ["folder", "link"] }).notNull(),
+	name: text("name").notNull(),
+	path: text("path"),
+	icon: text("icon"),
+	role: text("role").notNull().default("[]"),
+	sortOrder: integer("sort_order").notNull().default(0),
+	parentId: text("parent_id").references((): AnySQLiteColumn => menus.id),
+	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+	prompt: text("prompt"),
+	createdBy: text("created_by").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
@@ -176,3 +197,6 @@ export type NewTemplate02 = typeof template02.$inferInsert;
 
 export type Template03 = typeof template03.$inferSelect;
 export type NewTemplate03 = typeof template03.$inferInsert;
+
+export type Menu = typeof menus.$inferSelect;
+export type NewMenu = typeof menus.$inferInsert;
