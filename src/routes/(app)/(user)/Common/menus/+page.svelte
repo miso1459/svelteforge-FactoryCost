@@ -13,9 +13,6 @@
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import TrashIcon from "@lucide/svelte/icons/trash-2";
 	import SearchIcon from "@lucide/svelte/icons/search";
-	import ArrowUpDownIcon from "@lucide/svelte/icons/arrow-up-down";
-	import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
-	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import DownloadIcon from "@lucide/svelte/icons/download";
 	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
@@ -43,8 +40,6 @@
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let deleteOpen = $state(false);
-	let sortKey = $state<string>("name");
-	let sortDir = $state<"asc" | "desc">("asc");
 	let pageSize = $state(10);
 	let currentPage = $state(1);
 	let selectedIds = $state(new Set<string>());
@@ -131,36 +126,8 @@
 		return flatTree.filter((fi) => included.has(fi.item.id));
 	});
 
-	// ── Sort filtered tree ───────────────────────────────────────────────────
-	const sortedTree = $derived.by(() => {
-		const arr = [...filteredTree];
-		arr.sort((a, b) => {
-			let aVal: string;
-			let bVal: string;
-			if (sortKey === "name") {
-				aVal = a.item.name.toLowerCase();
-				bVal = b.item.name.toLowerCase();
-			} else if (sortKey === "type") {
-				aVal = a.item.type;
-				bVal = b.item.type;
-			} else if (sortKey === "path") {
-				aVal = a.item.path ?? "";
-				bVal = b.item.path ?? "";
-			} else if (sortKey === "isActive") {
-				aVal = a.item.isActive ? "1" : "0";
-				bVal = b.item.isActive ? "1" : "0";
-			} else {
-				aVal = String((a.item as Record<string, unknown>)[sortKey] ?? "");
-				bVal = String((b.item as Record<string, unknown>)[sortKey] ?? "");
-			}
-			const cmp = aVal.localeCompare(bVal);
-			return sortDir === "asc" ? cmp : -cmp;
-		});
-		return arr;
-	});
-
 	const paginated = $derived(
-		sortedTree.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+		filteredTree.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 	);
 
 	$effect(() => {
@@ -179,21 +146,6 @@
 			selectedIds = new Set();
 		}
 	});
-
-	// ── Sort helpers ─────────────────────────────────────────────────────────
-	function toggleSort(key: string) {
-		if (sortKey === key) {
-			sortDir = sortDir === "asc" ? "desc" : "asc";
-		} else {
-			sortKey = key;
-			sortDir = "asc";
-		}
-	}
-
-	function sortIcon(key: string) {
-		if (sortKey !== key) return ArrowUpDownIcon;
-		return sortDir === "asc" ? ArrowUpIcon : ArrowDownIcon;
-	}
 
 	// ── Select helpers ───────────────────────────────────────────────────────
 	function toggleSelect(id: string) {
@@ -539,13 +491,7 @@
 		return "h-0";
 	}
 
-	const columns = [
-		{ key: "name", label: "Name" },
-		{ key: "type", label: "Type" },
-		{ key: "role", label: "Roles" },
-		{ key: "path", label: "Path" },
-		{ key: "isActive", label: "Status" },
-	];
+	const columns = ["Name", "Type", "Roles", "Path", "Status"];
 </script>
 
 <svelte:head>
@@ -617,17 +563,8 @@
 							class="accent-primary size-4"
 						/>
 					</Table.Head>
-					{#each columns as col (col.key)}
-						{@const SortIcon = sortIcon(col.key)}
-						<Table.Head>
-							<button
-								class="flex items-center gap-1 text-left font-medium"
-								onclick={() => toggleSort(col.key)}
-							>
-								{col.label}
-								<SortIcon class="text-muted-foreground size-3" />
-							</button>
-						</Table.Head>
+					{#each columns as label}
+						<Table.Head>{label}</Table.Head>
 					{/each}
 					<Table.Head class="sticky right-0 z-[1] w-[100px] bg-background">Actions</Table.Head>
 				</Table.Row>
