@@ -238,7 +238,7 @@
 	</div>
 
 	<!-- Date Range Row -->
-	<div class="flex flex-wrap items-center gap-3">
+	<div class="flex items-center gap-3">
 		<div class="flex items-center gap-2">
 			<Label for="fromDate" class="text-xs text-muted-foreground">From</Label>
 			<Input id="fromDate" type="date" class="w-36" bind:value={fromDate} />
@@ -247,10 +247,18 @@
 			<Label for="toDate" class="text-xs text-muted-foreground">To</Label>
 			<Input id="toDate" type="date" class="w-36" bind:value={toDate} />
 		</div>
-		<p class="text-muted-foreground text-sm">
+	</div>
+
+	<!-- Search + Actions Row -->
+	<div class="flex items-center gap-2">
+		<div class="relative max-w-sm flex-1">
+			<SearchIcon class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+			<Input placeholder="Search records..." class="pl-9" bind:value={search} />
+		</div>
+		<p class="text-muted-foreground text-sm shrink-0">
 			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
 		</p>
-		<div class="ml-auto flex items-center gap-2">
+		<div class="flex items-center gap-2 shrink-0">
 			{#if selectedIds.size > 0}
 				<form method="POST" action="?/bulkDelete" use:enhance>
 					<input type="hidden" name="ids" value={[...selectedIds].join(",")} />
@@ -275,12 +283,6 @@
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</div>
-	</div>
-
-	<!-- Search Row -->
-	<div class="relative max-w-md">
-		<SearchIcon class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-		<Input placeholder="Search records..." class="pl-9" bind:value={search} />
 	</div>
 
 	<!-- Table -->
