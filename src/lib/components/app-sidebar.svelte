@@ -10,6 +10,7 @@
 	import BookOpenIcon from "@lucide/svelte/icons/book-open";
 	import CrownIcon from "@lucide/svelte/icons/crown";
 	import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
+	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
 	import LogOutIcon from "@lucide/svelte/icons/log-out";
 	import UserIcon from "@lucide/svelte/icons/user";
@@ -23,6 +24,7 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 	import * as Avatar from "$lib/components/ui/avatar/index.js";
 	import { Badge } from "$lib/components/ui/badge/index.js";
+	import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "$lib/components/ui/collapsible/index.js";
 
 	type Props = {
 		user: {
@@ -35,6 +37,20 @@
 	};
 
 	let { user, notificationCount = 0 }: Props = $props();
+
+	let openGroups = $state(new Set<string>([
+		"Overview", "Management", "System", "Templates", "Functions"
+	]));
+
+	function toggleGroup(label: string) {
+		const next = new Set(openGroups);
+		if (next.has(label)) {
+			next.delete(label);
+		} else {
+			next.add(label);
+		}
+		openGroups = next;
+	}
 
 	function getInitials(name: string) {
 		return name
@@ -134,26 +150,39 @@
 	<Sidebar.Content>
 		{#each navigationAdmin as group (group.label)}
 			<Sidebar.Group>
-				<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-				<Sidebar.GroupContent>
-					<Sidebar.Menu>
-						{#each group.items as item (item.title)}
-							<Sidebar.MenuItem>
-								<Sidebar.MenuButton>
-									{#snippet child({ props })}
-										<a href={item.url} {...props}>
-											<item.icon class="size-4" />
-											<span>{item.title}</span>
-										</a>
-									{/snippet}
-								</Sidebar.MenuButton>
-								{#if item.badge}
-									<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
-								{/if}
-							</Sidebar.MenuItem>
-						{/each}
-					</Sidebar.Menu>
-				</Sidebar.GroupContent>
+				<Collapsible open={openGroups.has(group.label)}>
+					<CollapsibleTrigger
+						onclick={() => toggleGroup(group.label)}
+					>
+						<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
+							<ChevronRightIcon
+								class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(group.label) ? 'rotate-90' : ''}"
+							/>
+							<span class="text-sidebar-foreground">{group.label}</span>
+						</div>
+					</CollapsibleTrigger>
+					<CollapsibleContent>
+						<Sidebar.GroupContent>
+							<Sidebar.Menu>
+								{#each group.items as item (item.title)}
+									<Sidebar.MenuItem>
+										<Sidebar.MenuButton>
+											{#snippet child({ props })}
+												<a href={item.url} {...props}>
+													<item.icon class="size-4" />
+													<span>{item.title}</span>
+												</a>
+											{/snippet}
+										</Sidebar.MenuButton>
+										{#if item.badge}
+											<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+										{/if}
+									</Sidebar.MenuItem>
+								{/each}
+							</Sidebar.Menu>
+						</Sidebar.GroupContent>
+					</CollapsibleContent>
+				</Collapsible>
 			</Sidebar.Group>
 		{/each}
 	</Sidebar.Content>
@@ -163,26 +192,39 @@
 	<Sidebar.Content>
 		{#each navigationUser as group (group.label)}
 			<Sidebar.Group>
-				<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-				<Sidebar.GroupContent>
-					<Sidebar.Menu>
-						{#each group.items as item (item.title)}
-							<Sidebar.MenuItem>
-								<Sidebar.MenuButton>
-									{#snippet child({ props })}
-										<a href={item.url} {...props}>
-											<item.icon class="size-4" />
-											<span>{item.title}</span>
-										</a>
-									{/snippet}
-								</Sidebar.MenuButton>
-								{#if item.badge}
-									<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
-								{/if}
-							</Sidebar.MenuItem>
-						{/each}
-					</Sidebar.Menu>
-				</Sidebar.GroupContent>
+				<Collapsible open={openGroups.has(group.label)}>
+					<CollapsibleTrigger
+						onclick={() => toggleGroup(group.label)}
+					>
+						<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
+							<ChevronRightIcon
+								class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(group.label) ? 'rotate-90' : ''}"
+							/>
+							<span class="text-sidebar-foreground">{group.label}</span>
+						</div>
+					</CollapsibleTrigger>
+					<CollapsibleContent>
+						<Sidebar.GroupContent>
+							<Sidebar.Menu>
+								{#each group.items as item (item.title)}
+									<Sidebar.MenuItem>
+										<Sidebar.MenuButton>
+											{#snippet child({ props })}
+												<a href={item.url} {...props}>
+													<item.icon class="size-4" />
+													<span>{item.title}</span>
+												</a>
+											{/snippet}
+										</Sidebar.MenuButton>
+										{#if item.badge}
+											<Sidebar.MenuBadge>{item.badge}</Sidebar.MenuBadge>
+										{/if}
+									</Sidebar.MenuItem>
+								{/each}
+							</Sidebar.Menu>
+						</Sidebar.GroupContent>
+					</CollapsibleContent>
+				</Collapsible>
 			</Sidebar.Group>
 		{/each}
 	</Sidebar.Content>
