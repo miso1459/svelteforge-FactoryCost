@@ -258,7 +258,7 @@
 		<p class="text-muted-foreground text-sm shrink-0">
 			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
 		</p>
-		<div class="flex items-center gap-2 shrink-0">
+		<div class="ml-auto flex items-center gap-2 shrink-0">
 			{#if selectedIds.size > 0}
 				<form method="POST" action="?/bulkDelete" use:enhance>
 					<input type="hidden" name="ids" value={[...selectedIds].join(",")} />
