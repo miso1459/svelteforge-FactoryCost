@@ -25,7 +25,7 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar user={data.user} notificationCount={data.unreadNotificationCount} />
+	<AppSidebar user={data.user} notificationCount={data.unreadNotificationCount} menus={data.menus} />
 	<Sidebar.Inset class="min-w-0 overflow-hidden">
 		<header
 			class="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4"

@@ -38,9 +38,20 @@
 			role: string;
 		};
 		notificationCount?: number;
+		menus?: Array<{
+			id: string;
+			type: string;
+			name: string;
+			path: string | null;
+			icon: string | null;
+			role: string;
+			parentId: string | null;
+			isActive: boolean;
+			sortOrder: number;
+		}>;
 	};
 
-	let { user, notificationCount = 0 }: Props = $props();
+	let { user, notificationCount = 0, menus: menuList = [] }: Props = $props();
 
 	let openGroups = $state(
 		new Set<string>(["Overview", "Management", "System", "Templates", "Functions"])
@@ -97,8 +108,9 @@
 			label: "Management",
 			items: [
 				{ title: "Users", url: "/users", icon: UsersIcon },
-				{ title: "Content", url: "/content", icon: FileTextIcon },
+				// { title: "Content", url: "/content", icon: FileTextIcon },
 				{ title: "Roles", url: "/roles", icon: ShieldIcon },
+				{ title: "Menus", url: "/Common/menus", icon: FileTextIcon },
 			],
 		},
 		{
@@ -117,15 +129,50 @@
 		},
 	]);
 
-	const navigationUser: NavGroup[] = $derived([
-		{
-			label: "Functions",
-			items: [
-				{ title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
-				{ title: "Analytics", url: "/analytics", icon: BarChart3Icon },
-			],
-		},
-	]);
+	// Icon name → Lucide component mapping
+	const iconMap: Record<string, typeof LayoutDashboardIcon> = {
+		"layout-dashboard": LayoutDashboardIcon,
+		"bar-chart-3": BarChart3Icon,
+		"file-text": FileTextIcon,
+		"users": UsersIcon,
+		"settings": SettingsIcon,
+		"shield": ShieldIcon,
+		"bell": BellIcon,
+		"database": DatabaseIcon,
+		"book-open": BookOpenIcon,
+		"zap": ZapIcon,
+		"user": UserIcon,
+		"crown": CrownIcon,
+	};
+
+	const navigationUser = $derived.by(() => {
+		if (!menuList || menuList.length === 0) return [] as NavGroup[];
+
+		const userRole = user?.role ?? "guest";
+		const roleFiltered = menuList.filter((m) => {
+			try {
+				const roles: string[] = JSON.parse(m.role);
+				return roles.includes(userRole);
+			} catch {
+				return false;
+			}
+		});
+
+		const folders = roleFiltered.filter((m) => m.type === "folder" && !m.parentId);
+		const links = roleFiltered.filter((m) => m.type === "link");
+
+		return folders.map((folder) => ({
+			label: folder.name,
+			items: links
+				.filter((link) => link.parentId === folder.id)
+				.map((link) => ({
+					title: link.name,
+					url: link.path ?? "/",
+					icon: iconMap[link.icon ?? ""] ?? FileTextIcon,
+					badge: undefined as string | undefined,
+				})),
+		}));
+	});
 </script>
 
 <Sidebar.Root>
@@ -168,7 +215,7 @@
 										? 'rotate-90'
 										: ''}"
 								/>
-								<span class="text-sidebar-foreground">{group.label}</span>
+								<span class="text-sidebar-foreground font-bold underline">{group.label}</span>
 							</div>
 						</CollapsibleTrigger>
 						<CollapsibleContent>
@@ -215,7 +262,7 @@
 										? 'rotate-90'
 										: ''}"
 								/>
-								<span class="text-sidebar-foreground">{group.label}</span>
+								<span class="text-sidebar-foreground font-bold underline">{group.label}</span>
 							</div>
 						</CollapsibleTrigger>
 						<CollapsibleContent>

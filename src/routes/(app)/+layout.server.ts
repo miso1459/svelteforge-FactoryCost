@@ -1,7 +1,7 @@
 import { redirect, error } from "@sveltejs/kit";
 import { db } from "$lib/server/db/index.js";
-import { notifications, appSettings } from "$lib/server/db/schema.js";
-import { eq, and, or, isNull, sql, desc } from "drizzle-orm";
+import { notifications, appSettings, menus } from "$lib/server/db/schema.js";
+import { eq, and, or, isNull, sql, desc, asc } from "drizzle-orm";
 import type { LayoutServerLoad } from "./$types.js";
 
 export const load: LayoutServerLoad = async ({ locals }) => {
@@ -40,9 +40,21 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		.orderBy(desc(notifications.createdAt))
 		.limit(5);
 
+	let menuList: Array<typeof menus.$inferSelect> = [];
+	try {
+		menuList = await db
+			.select()
+			.from(menus)
+			.where(eq(menus.isActive, true))
+			.orderBy(asc(menus.sortOrder));
+	} catch {
+		// menus table may not exist yet
+	}
+
 	return {
 		user: locals.user,
 		unreadNotificationCount: countResult?.count ?? 0,
 		recentNotifications,
+		menus: menuList,
 	};
 };
