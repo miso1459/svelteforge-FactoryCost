@@ -152,15 +152,15 @@
 	</Sidebar.Header>
 
 	{#if user.role === "admin"}
-		<Sidebar.Content>
+		<Sidebar.Content class="gap-0">
 			{#each navigationAdmin as group (group.label)}
-				<Sidebar.Group>
+				<Sidebar.Group class="p-0.5">
 					<Collapsible
 						open={openGroups.has(group.label)}
 						onOpenChange={(o) => toggleGroup(group.label, o)}
 					>
 						<CollapsibleTrigger>
-							<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
+							<div class="flex w-full items-center gap-2 px-2 py-0.5 text-sm font-medium">
 								<ChevronRightIcon
 									class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(
 										group.label
@@ -176,7 +176,7 @@
 								<Sidebar.Menu>
 									{#each group.items as item (item.title)}
 										<Sidebar.MenuItem>
-											<Sidebar.MenuButton>
+											<Sidebar.MenuButton class="h-6 p-1">
 												{#snippet child({ props })}
 													<a href={item.url} {...props}>
 														<item.icon class="size-4" />
@@ -199,15 +199,15 @@
 	{/if}
 
 	{#if user.role !== "guest"}
-		<Sidebar.Content>
+		<Sidebar.Content class="gap-0">
 			{#each navigationUser as group (group.label)}
-				<Sidebar.Group>
+				<Sidebar.Group class="p-0.5">
 					<Collapsible
 						open={openGroups.has(group.label)}
 						onOpenChange={(o) => toggleGroup(group.label, o)}
 					>
 						<CollapsibleTrigger>
-							<div class="flex w-full items-center gap-2 px-2 py-1.5 text-sm font-medium">
+							<div class="flex w-full items-center gap-2 px-2 py-0.5 text-sm font-medium">
 								<ChevronRightIcon
 									class="size-4 shrink-0 transition-transform duration-200 {openGroups.has(
 										group.label
@@ -223,7 +223,7 @@
 								<Sidebar.Menu>
 									{#each group.items as item (item.title)}
 										<Sidebar.MenuItem>
-											<Sidebar.MenuButton>
+											<Sidebar.MenuButton class="h-6 p-1">
 												{#snippet child({ props })}
 													<a href={item.url} {...props}>
 														<item.icon class="size-4" />
