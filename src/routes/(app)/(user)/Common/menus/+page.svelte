@@ -18,6 +18,7 @@
 	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import DownloadIcon from "@lucide/svelte/icons/download";
 	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
+	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import GripVerticalIcon from "@lucide/svelte/icons/grip-vertical";
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
@@ -25,6 +26,8 @@
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
+	import type { CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import { SvelteSet } from "svelte/reactivity";
 
 	let { data, form } = $props();
 
@@ -62,28 +65,26 @@
 	let formIsActive = $state(true);
 
 	// ── Hierarchical tree expand ─────────────────────────────────────────────
-	let expanded = $state(new Set<string>());
+	let expanded = new SvelteSet<string>();
+	let treeInitialized = $state(false);
 
 	$effect(() => {
 		const tree = data.menuTree;
-		if (tree.length > 0 && expanded.size === 0) {
-			const ids = new Set<string>();
+		if (!treeInitialized && tree.length > 0) {
 			function walk(nodes: typeof tree) {
 				for (const node of nodes) {
-					ids.add(node.id);
+					expanded.add(node.id);
 					walk(node.children);
 				}
 			}
 			walk(tree);
-			expanded = ids;
+			treeInitialized = true;
 		}
 	});
 
 	function toggleExpand(id: string) {
-		const next = new Set(expanded);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		expanded = next;
+		if (expanded.has(id)) expanded.delete(id);
+		else expanded.add(id);
 	}
 
 	// ── Flat tree for rendering ──────────────────────────────────────────────
@@ -131,7 +132,7 @@
 	});
 
 	// ── Sort filtered tree ───────────────────────────────────────────────────
-	const sortedTree = $derived(() => {
+	const sortedTree = $derived.by(() => {
 		const arr = [...filteredTree];
 		arr.sort((a, b) => {
 			let aVal: string;
@@ -159,7 +160,7 @@
 	});
 
 	const paginated = $derived(
-		sortedTree().slice((currentPage - 1) * pageSize, currentPage * pageSize)
+		sortedTree.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 	);
 
 	$effect(() => {
@@ -252,42 +253,38 @@
 
 	// ── Parent folder options (exclude self & descendants when editing) ──────
 	const parentOptions = $derived.by(() => {
-		const result: Array<{ id: string; label: string; depth: number }> = [];
-		const folders = data.flatMenus.filter((m) => m.type === "folder");
+		const result: CodeValue[] = [];
 
-		function isDescendantOf(ancestorId: string, childId: string): boolean {
-			let current: string | null | undefined = childId;
-			while (current) {
-				if (current === ancestorId) return true;
-				const node = data.flatMenus.find((m) => m.id === current);
-				current = node?.parentId ?? null;
+		function walk(items: (typeof data.menuTree)[number][], depth: number, skipChildren: boolean) {
+			for (const node of items) {
+				if (skipChildren) continue;
+				const isSelf = Boolean(editRecord && node.id === editRecord.id);
+				if (isSelf) {
+					walk(node.children, depth + 1, true);
+					continue;
+				}
+				if (editRecord && isDescendantOf(editRecord.id, node.id)) continue;
+				if (node.type === "folder") {
+					result.push({
+						code: node.id,
+						value: `${"\u2500".repeat(depth)} ${node.name}`,
+					});
+				}
+				walk(node.children, depth + 1, false);
 			}
-			return false;
 		}
-
-		for (const folder of folders) {
-			if (editRecord && (folder.id === editRecord.id || isDescendantOf(editRecord.id, folder.id))) {
-				continue;
-			}
-			const depth = calcDepth(folder.id);
-			result.push({
-				id: folder.id,
-				label: `${"─".repeat(depth)} ${folder.name}`,
-				depth,
-			});
-		}
+		walk(data.menuTree, 0, false);
 		return result;
 	});
 
-	function calcDepth(id: string): number {
-		let depth = 0;
-		let current: string | null | undefined = id;
+	function isDescendantOf(ancestorId: string, childId: string): boolean {
+		let current: string | null | undefined = childId;
 		while (current) {
+			if (current === ancestorId) return true;
 			const node = data.flatMenus.find((m) => m.id === current);
 			current = node?.parentId ?? null;
-			if (current) depth++;
 		}
-		return depth;
+		return false;
 	}
 
 	// ── Dialog openers ───────────────────────────────────────────────────────
@@ -843,25 +840,11 @@
 				<!-- Parent folder -->
 				<div class="grid gap-2">
 					<Label for="create-parent">Parent Folder</Label>
-					<Select.Root
-						type="single"
-						value={formParentId}
-						onValueChange={(v: string) => {
-							formParentId = v ?? "";
-						}}
-					>
-						<Select.Trigger id="create-parent" class="w-full">
-							{formParentId
-								? (parentOptions.find((p) => p.id === formParentId)?.label ?? "Root")
-								: "Root (no parent)"}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="">Root (no parent)</Select.Item>
-							{#each parentOptions as opt (opt.id)}
-								<Select.Item value={opt.id}>{opt.label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
+					<SearchableSelect
+						items={[{ code: "", value: "\u2014 No Parent \u2014" }, ...parentOptions]}
+						bind:value={formParentId}
+						placeholder="Select parent folder..."
+					/>
 					<input type="hidden" name="parentId" value={formParentId} />
 				</div>
 
@@ -964,25 +947,11 @@
 				<!-- Parent folder -->
 				<div class="grid gap-2">
 					<Label for="edit-parent">Parent Folder</Label>
-					<Select.Root
-						type="single"
-						value={formParentId}
-						onValueChange={(v: string) => {
-							formParentId = v ?? "";
-						}}
-					>
-						<Select.Trigger id="edit-parent" class="w-full">
-							{formParentId
-								? (parentOptions.find((p) => p.id === formParentId)?.label ?? "Root")
-								: "Root (no parent)"}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value="">Root (no parent)</Select.Item>
-							{#each parentOptions as opt (opt.id)}
-								<Select.Item value={opt.id}>{opt.label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
+					<SearchableSelect
+						items={[{ code: "", value: "\u2014 No Parent \u2014" }, ...parentOptions]}
+						bind:value={formParentId}
+						placeholder="Select parent folder..."
+					/>
 					<input type="hidden" name="parentId" value={formParentId} />
 				</div>
 
@@ -994,11 +963,10 @@
 
 				<!-- isActive -->
 				<div class="flex items-center gap-2">
+					<input type="hidden" name="isActive" value={formIsActive ? "true" : "false"} />
 					<input
 						type="checkbox"
 						id="edit-isActive"
-						name="isActive"
-						value="true"
 						checked={formIsActive}
 						onchange={(e) => {
 							formIsActive = e.currentTarget.checked;
