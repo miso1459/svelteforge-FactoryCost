@@ -15,6 +15,7 @@
 	import SearchIcon from "@lucide/svelte/icons/search";
 	import DownloadIcon from "@lucide/svelte/icons/download";
 	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
+	import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import GripVerticalIcon from "@lucide/svelte/icons/grip-vertical";
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
@@ -48,6 +49,15 @@
 	let editRecord = $state<MenuFlat | null>(null);
 	let deleteId = $state("");
 	let deleteHasChildren = $state(false);
+
+	// ── Audit Trail ────────────────────────────────────────────────────────────
+	let auditOpen = $state(false);
+	let auditRecord = $state<{
+		createdBy: string;
+		updatedBy: string;
+		createdAt: Date | null;
+		updatedAt: Date | null;
+	} | null>(null);
 
 	// ── Form dialog state ────────────────────────────────────────────────────
 	let formType = $state<"folder" | "link">("link");
@@ -274,6 +284,25 @@
 		deleteId = item.id;
 		deleteHasChildren = data.flatMenus.some((m) => m.parentId === item.id);
 		deleteOpen = true;
+	}
+
+	function pad(n: number): string {
+		return n.toString().padStart(2, "0");
+	}
+	function formatDateTime(date: Date | null): string {
+		if (!date) return "\u2014";
+		const d = new Date(date);
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+	}
+
+	function openAudit(item: MenuFlat) {
+		auditRecord = {
+			createdBy: item.createdBy,
+			updatedBy: item.updatedBy,
+			createdAt: item.createdAt,
+			updatedAt: item.updatedAt,
+		};
+		auditOpen = true;
 	}
 
 	// ── Refresh ──────────────────────────────────────────────────────────────
@@ -649,6 +678,9 @@
 										<PlusIcon class="size-4" />
 									</Button>
 								{/if}
+								<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit(fi.item)} title="Audit trail">
+									<ScrollTextIcon class="size-4" />
+								</Button>
 								<Button variant="ghost" size="icon" class="size-8" onclick={() => openEdit(fi.item)} title="Edit">
 									<PencilIcon class="size-4" />
 								</Button>
@@ -693,6 +725,41 @@
 {/if}
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
+     Audit Trail Dialog
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<Dialog.Root bind:open={auditOpen}>
+	<Dialog.Content class="sm:max-w-[400px]">
+		<Dialog.Header>
+			<Dialog.Title>Audit Trail</Dialog.Title>
+			<Dialog.Description>Record creation and modification history.</Dialog.Description>
+		</Dialog.Header>
+		{#if auditRecord}
+			<div class="grid gap-4 py-4">
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Created By</Label>
+					<p class="text-sm font-medium">{auditRecord.createdBy}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Updated By</Label>
+					<p class="text-sm font-medium">{auditRecord.updatedBy}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Created At</Label>
+					<p class="text-sm font-medium">{formatDateTime(auditRecord.createdAt)}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Updated At</Label>
+					<p class="text-sm font-medium">{formatDateTime(auditRecord.updatedAt)}</p>
+				</div>
+			</div>
+		{/if}
+		<Dialog.Footer>
+			<Button onclick={() => (auditOpen = false)}>Close</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
      Create / Edit Dialog
      ═══════════════════════════════════════════════════════════════════════════ -->
 <Dialog.Root bind:open={createOpen}>
@@ -721,7 +788,15 @@
 						type="single"
 						value={formType}
 						onValueChange={(v: string) => {
-							if (v) formType = v as "folder" | "link";
+							if (v) {
+								formType = v as "folder" | "link";
+								if (v === "folder" && !formIcon) {
+									formIcon = "folder-tree";
+								}
+								if (v === "link" && formIcon === "folder-tree") {
+									formIcon = "";
+								}
+							}
 						}}
 					>
 						<Select.Trigger id="create-type" class="w-full">
@@ -828,7 +903,15 @@
 						type="single"
 						value={formType}
 						onValueChange={(v: string) => {
-							if (v) formType = v as "folder" | "link";
+							if (v) {
+								formType = v as "folder" | "link";
+								if (v === "folder" && !formIcon) {
+									formIcon = "folder-tree";
+								}
+								if (v === "link" && formIcon === "folder-tree") {
+									formIcon = "";
+								}
+							}
 						}}
 					>
 						<Select.Trigger id="edit-type" class="w-full">
