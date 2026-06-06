@@ -91,6 +91,7 @@
 			label: "Templates",
 			items: [
 				{ title: "기본 관리", url: "/Templates/T01", icon: FileTextIcon },
+				{ title: "기본 관리 날짜", url: "/Templates/T02", icon: FileTextIcon },
 			],
 		},
 	]);
