@@ -150,5 +150,29 @@ export type AppSetting = typeof appSettings.$inferSelect;
 export type Template01 = typeof template01.$inferSelect;
 export type NewTemplate01 = typeof template01.$inferInsert;
 
+export const template03 = sqliteTable(
+	"template03",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		documentDt: integer("document_dt", { mode: "timestamp" }).notNull(),
+		code: text("code").notNull(),
+		desc: text("desc").notNull(),
+		remark: text("remark"),
+		itemAcct: text("item_acct").notNull(),
+		dateValid: integer("date_valid", { mode: "timestamp" }),
+		createdBy: text("created_by").notNull(),
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+		updatedBy: text("updated_by").notNull(),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+	}
+);
+
 export type Template02 = typeof template02.$inferSelect;
 export type NewTemplate02 = typeof template02.$inferInsert;
+
+export type Template03 = typeof template03.$inferSelect;
+export type NewTemplate03 = typeof template03.$inferInsert;
