@@ -15,6 +15,13 @@
       "when": 1780652523408,
       "tag": "0001_striped_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780740820733,
+      "tag": "0002_conscious_doctor_doom",
+      "breakpoints": true
     }
   ]
 }

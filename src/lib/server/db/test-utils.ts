@@ -78,6 +78,24 @@ CREATE TABLE IF NOT EXISTS app_settings (
 	value text NOT NULL,
 	updated_at integer NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS menus (
+	id text PRIMARY KEY NOT NULL,
+	type text NOT NULL,
+	name text NOT NULL,
+	path text,
+	icon text,
+	role text DEFAULT '[]' NOT NULL,
+	sort_order integer DEFAULT 0 NOT NULL,
+	parent_id text,
+	is_active integer DEFAULT true NOT NULL,
+	prompt text,
+	created_by text NOT NULL,
+	created_at integer NOT NULL,
+	updated_by text NOT NULL,
+	updated_at integer NOT NULL,
+	FOREIGN KEY (parent_id) REFERENCES menus(id) ON UPDATE no action ON DELETE no action
+);
 `;
 
 export function createTestDb() {
