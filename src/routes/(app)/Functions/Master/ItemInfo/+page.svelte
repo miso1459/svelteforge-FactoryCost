@@ -3,9 +3,8 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
 	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
-	import Template03FormDialog from "./template03-form-dialog.svelte";
+	import MasterItemFormDialog from "./master-item-form-dialog.svelte";
 	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import PencilIcon from "@lucide/svelte/icons/pencil";
@@ -18,6 +17,7 @@
 import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
 import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
 import * as Dialog from "$lib/components/ui/dialog/index.js";
+import { Label } from "$lib/components/ui/label/index.js";
 	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
@@ -26,41 +26,22 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	let { data, form } = $props();
 
-	// Date range: default From = Today-7, To = Today
-	const today = new Date();
-	const defaultFrom = new Date(today);
-	defaultFrom.setDate(defaultFrom.getDate() - 7);
-
-	function dateStr(d: Date) {
-		return d.toISOString().slice(0, 10);
-	}
-
-	function parseDate(s: string) {
-		return new Date(s + "T00:00:00");
-	}
-
-	let fromDate = $state(dateStr(defaultFrom));
-	let toDate = $state(dateStr(today));
-	let createDate = $state(dateStr(today));
-
 	let search = $state("");
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let deleteOpen = $state(false);
-	let sortKey = $state<string>("id");
-	let sortDir = $state<"asc" | "desc">("desc");
+	let sortKey = $state<string>("itemCode");
+	let sortDir = $state<"asc" | "desc">("asc");
 	let pageSize = $state(10);
 	let currentPage = $state(1);
 	let selectedIds = $state(new Set<string>());
 
 	let editData = $state<{
-		id: number;
-		documentDt: string;
-		code: string;
-		desc: string;
-		remark: string | null;
+		itemCode: string;
+		itemDesc: string;
+		itemSpec: string | null;
+		itemRemark: string | null;
 		itemAcct: string;
-		dateValid: Date | null;
 	} | null>(null);
 	let deleteId = $state("");
 	let auditOpen = $state(false);
@@ -77,27 +58,14 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		return item ? `${item.value} (${item.code})` : code;
 	}
 
-	const dateFiltered = $derived(() => {
-		const from = parseDate(fromDate);
-		const toEnd = parseDate(toDate);
-		toEnd.setHours(23, 59, 59, 999);
-		return data.records.filter((r) => {
-			const d = r.documentDt ? new Date(r.documentDt) : null;
-			if (!d) return false;
-			return d >= from && d <= toEnd;
-		});
-	});
-
 	const filtered = $derived(
-		dateFiltered().filter(
+		data.records.filter(
 			(r) =>
-				String(r.id).includes(search) ||
-				r.code.toLowerCase().includes(search.toLowerCase()) ||
-				r.desc.toLowerCase().includes(search.toLowerCase()) ||
-				(r.remark ?? "").toLowerCase().includes(search.toLowerCase()) ||
-				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase()) ||
-				dateSearchStrings(r.documentDt).some((s) => s.includes(search)) ||
-				dateSearchStrings(r.dateValid).some((s) => s.includes(search))
+				r.itemCode.toLowerCase().includes(search.toLowerCase()) ||
+				r.itemDesc.toLowerCase().includes(search.toLowerCase()) ||
+				(r.itemSpec ?? "").toLowerCase().includes(search.toLowerCase()) ||
+				(r.itemRemark ?? "").toLowerCase().includes(search.toLowerCase()) ||
+				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase())
 		)
 	);
 
@@ -115,7 +83,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 	const paginated = $derived(sorted().slice((currentPage - 1) * pageSize, currentPage * pageSize));
 
 	$effect(() => {
-		search; fromDate; toDate;
+		// Reset page when search changes
+		search;
 		currentPage = 1;
 	});
 
@@ -141,10 +110,10 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		return sortDir === "asc" ? ArrowUpIcon : ArrowDownIcon;
 	}
 
-	function toggleSelect(id: string) {
+	function toggleSelect(itemCode: string) {
 		const next = new Set(selectedIds);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
+		if (next.has(itemCode)) next.delete(itemCode);
+		else next.add(itemCode);
 		selectedIds = next;
 	}
 
@@ -152,27 +121,12 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		if (selectedIds.size === paginated.length) {
 			selectedIds = new Set();
 		} else {
-			selectedIds = new Set(paginated.map((r) => String(r.id)));
+			selectedIds = new Set(paginated.map((r) => r.itemCode));
 		}
 	}
 
 	function pad(n: number): string {
 		return n.toString().padStart(2, "0");
-	}
-
-	function dateSearchStrings(date: Date | null): string[] {
-		if (!date) return [];
-		const d = new Date(date);
-		const y = d.getFullYear();
-		const mm = pad(d.getMonth() + 1);
-		const dd = pad(d.getDate());
-		return [`${y}${mm}${dd}`, `${y}-${mm}-${dd}`];
-	}
-
-	function formatDate(date: Date | null) {
-		if (!date) return "—";
-		const d = new Date(date);
-		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 	}
 
 	function formatDateTime(date: Date | null) {
@@ -183,19 +137,17 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	function openEdit(record: (typeof data.records)[0]) {
 		editData = {
-			id: record.id,
-			documentDt: formatDate(record.documentDt),
-			code: record.code,
-			desc: record.desc,
-			remark: record.remark,
+			itemCode: record.itemCode,
+			itemDesc: record.itemDesc,
+			itemSpec: record.itemSpec,
+			itemRemark: record.itemRemark,
 			itemAcct: record.itemAcct,
-			dateValid: record.dateValid,
 		};
 		editOpen = true;
 	}
 
-	function openDelete(recordId: number) {
-		deleteId = String(recordId);
+	function openDelete(itemCode: string) {
+		deleteId = itemCode;
 		deleteOpen = true;
 	}
 
@@ -209,11 +161,6 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		auditOpen = true;
 	}
 
-	function onOpenCreate() {
-		createDate = toDate;
-		createOpen = true;
-	}
-
 	let refreshing = $state(false);
 
 	async function handleRefresh() {
@@ -225,58 +172,42 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	function handleExport(format: "csv" | "json") {
 		const exportData = filtered.map((r) => ({
-			id: r.id,
-			documentDt: formatDate(r.documentDt),
-			code: r.code,
-			desc: r.desc,
-			remark: r.remark ?? "",
 			itemAcct: itemAcctLabel(r.itemAcct),
-			dateValid: formatDate(r.dateValid),
+			itemCode: r.itemCode,
+			itemDesc: r.itemDesc,
+			itemSpec: r.itemSpec ?? "",
+			itemRemark: r.itemRemark ?? "",
 		}));
-		if (format === "csv") exportToCSV(exportData, "template03");
-		else exportToJSON(exportData, "template03");
+		if (format === "csv") exportToCSV(exportData, "Master_Item");
+		else exportToJSON(exportData, "Master_Item");
 	}
 
 	const columns = [
-		{ key: "id", label: "ID" },
-		{ key: "documentDt", label: "Document Dt" },
-		{ key: "code", label: "Code" },
-		{ key: "desc", label: "Desc" },
-		{ key: "remark", label: "Remark" },
 		{ key: "itemAcct", label: "Item Acct" },
-		{ key: "dateValid", label: "Date Valid" },
+		{ key: "itemCode", label: "Item Code" },
+		{ key: "itemDesc", label: "Item Desc" },
+		{ key: "itemSpec", label: "Item Spec" },
+		{ key: "itemRemark", label: "Item Remark" },
 	];
 </script>
 
 <svelte:head>
-	<title>Template 03 - SvelteForge Factory Cost</title>
+	<title>Item Info - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">Template 03</h1>
-			<p class="text-muted-foreground">Manage template records with date range.</p>
+			<h1 class="text-3xl font-bold tracking-tight">Item Info</h1>
+			<p class="text-muted-foreground">Manage master item records.</p>
 		</div>
-		<Button onclick={onOpenCreate}>
+		<Button onclick={() => (createOpen = true)}>
 			<PlusIcon class="mr-2 size-4" />
 			Add Record
 		</Button>
 	</div>
 
-	<!-- Date Range Row -->
-	<div class="flex items-center gap-3">
-		<div class="flex items-center gap-2">
-			<Label for="fromDate" class="text-xs text-muted-foreground">From</Label>
-			<Input id="fromDate" type="date" class="w-36" bind:value={fromDate} />
-		</div>
-		<div class="flex items-center gap-2">
-			<Label for="toDate" class="text-xs text-muted-foreground">To</Label>
-			<Input id="toDate" type="date" class="w-36" bind:value={toDate} />
-		</div>
-	</div>
-
-	<!-- Search + Actions Row -->
+	<!-- Toolbar -->
 	<div class="flex items-center gap-2">
 		<div class="relative max-w-sm flex-1">
 			<SearchIcon class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -285,10 +216,10 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		<Button variant="ghost" size="icon" class="size-8 shrink-0" onclick={handleRefresh} disabled={refreshing}>
 			<RefreshCwIcon class="size-4 {refreshing ? 'animate-spin' : ''}" />
 		</Button>
-		<p class="text-muted-foreground text-sm shrink-0">
+		<p class="text-muted-foreground text-sm">
 			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
 		</p>
-		<div class="ml-auto flex items-center gap-2 shrink-0">
+		<div class="ml-auto flex items-center gap-2">
 			{#if selectedIds.size > 0}
 				<form method="POST" action="?/bulkDelete" use:enhance>
 					<input type="hidden" name="ids" value={[...selectedIds].join(",")} />
@@ -344,24 +275,21 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each paginated as record (record.id)}
-					{@const rid = String(record.id)}
-					<Table.Row class={selectedIds.has(rid) ? "bg-muted/50" : ""}>
+				{#each paginated as record (record.itemCode)}
+					<Table.Row class={selectedIds.has(record.itemCode) ? "bg-muted/50" : ""}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
 								type="checkbox"
-								checked={selectedIds.has(rid)}
-								onchange={() => toggleSelect(rid)}
+								checked={selectedIds.has(record.itemCode)}
+								onchange={() => toggleSelect(record.itemCode)}
 								class="accent-primary size-4"
 							/>
 						</Table.Cell>
-						<Table.Cell class="font-mono text-xs">{record.id}</Table.Cell>
-						<Table.Cell class="font-medium">{formatDate(record.documentDt)}</Table.Cell>
-						<Table.Cell class="font-mono">{record.code}</Table.Cell>
-						<Table.Cell>{record.desc}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.remark ?? "—"}</Table.Cell>
 						<Table.Cell>{itemAcctLabel(record.itemAcct)}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{formatDate(record.dateValid)}</Table.Cell>
+						<Table.Cell class="font-medium font-mono">{record.itemCode}</Table.Cell>
+						<Table.Cell>{record.itemDesc}</Table.Cell>
+						<Table.Cell class="text-muted-foreground">{record.itemSpec ?? "—"}</Table.Cell>
+						<Table.Cell class="text-muted-foreground">{record.itemRemark ?? "—"}</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">
 							<div class="flex items-center gap-1">
 								<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit(record)}>
@@ -374,7 +302,7 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 									variant="ghost"
 									size="icon"
 									class="text-destructive size-8"
-									onclick={() => openDelete(record.id)}
+									onclick={() => openDelete(record.itemCode)}
 								>
 									<TrashIcon class="size-4" />
 								</Button>
@@ -383,8 +311,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={9} class="h-24 text-center">
-							{search ? "No records match your filters." : "No records found."}
+						<Table.Cell colspan={7} class="h-24 text-center">
+							{search ? "No records match your search." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
 				{/each}
@@ -394,8 +322,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 	</div>
 </div>
 
-<Template03FormDialog bind:open={createOpen} mode="create" defaultDt={createDate} />
-<Template03FormDialog bind:open={editOpen} mode="edit" data={editData} />
+<MasterItemFormDialog bind:open={createOpen} mode="create" />
+<MasterItemFormDialog bind:open={editOpen} mode="edit" data={editData} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
 
 <Dialog.Root bind:open={auditOpen}>

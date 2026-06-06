@@ -168,8 +168,27 @@ export type Notification = typeof notifications.$inferSelect;
 export type OAuthAccount = typeof oauthAccounts.$inferSelect;
 export type AppSetting = typeof appSettings.$inferSelect;
 
+export const masterItem = sqliteTable("Master_Item", {
+	itemCode: text("item_code").primaryKey(),
+	itemDesc: text("item_desc").notNull(),
+	itemSpec: text("item_spec"),
+	itemRemark: text("item_remark"),
+	itemAcct: text("item_acct").notNull(),
+	createdBy: text("created_by").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+});
+
 export type Template01 = typeof template01.$inferSelect;
 export type NewTemplate01 = typeof template01.$inferInsert;
+
+export type MasterItem = typeof masterItem.$inferSelect;
+export type NewMasterItem = typeof masterItem.$inferInsert;
 
 export const template03 = sqliteTable(
 	"template03",

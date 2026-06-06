@@ -118,13 +118,23 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="itemAcct" class="font-medium text-amber-600 dark:text-amber-400">Item Acct *</Label>
-					<input type="hidden" name="itemAcct" value={itemAcct} />
-					<SearchableSelect
-						items={acctItems}
-						bind:value={itemAcct}
-						placeholder="Search item acct..."
-						class={inputClasses.required}
-					/>
+					<div class="relative">
+						<input
+							type="text"
+							class="absolute inset-0 opacity-0 pointer-events-none cursor-default"
+							required
+							value={itemAcct}
+							tabindex="-1"
+							aria-hidden="true"
+						/>
+						<input type="hidden" name="itemAcct" value={itemAcct} />
+						<SearchableSelect
+							items={acctItems}
+							bind:value={itemAcct}
+							placeholder="Search item acct..."
+							class={inputClasses.required}
+						/>
+					</div>
 				</div>
 				<div class="grid gap-2">
 					<Label for="dateValid" class="text-muted-foreground">Date Valid</Label>

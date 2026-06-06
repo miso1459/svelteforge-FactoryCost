@@ -99,7 +99,9 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 				r.code.toLowerCase().includes(search.toLowerCase()) ||
 				r.desc.toLowerCase().includes(search.toLowerCase()) ||
 				(r.remark ?? "").toLowerCase().includes(search.toLowerCase()) ||
-				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase())
+				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase()) ||
+				dateSearchStrings(r.documentDt).some((s) => s.includes(search)) ||
+				dateSearchStrings(r.dateValid).some((s) => s.includes(search))
 		)
 	);
 
@@ -164,6 +166,15 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	function pad(n: number): string {
 		return n.toString().padStart(2, "0");
+	}
+
+	function dateSearchStrings(date: Date | null): string[] {
+		if (!date) return [];
+		const d = new Date(date);
+		const y = d.getFullYear();
+		const mm = pad(d.getMonth() + 1);
+		const dd = pad(d.getDate());
+		return [`${y}${mm}${dd}`, `${y}-${mm}-${dd}`];
 	}
 
 	function formatDate(date: Date | null) {

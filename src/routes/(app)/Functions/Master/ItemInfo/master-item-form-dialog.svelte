@@ -7,18 +7,18 @@
 	import { ITEM_ACCT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import { enhance } from "$app/forms";
 
-	type Template01Data = {
-		code: string;
-		desc: string;
-		remark: string | null;
+	type MasterItemData = {
+		itemCode: string;
+		itemDesc: string;
+		itemSpec: string | null;
+		itemRemark: string | null;
 		itemAcct: string;
-		dateValid: Date | null;
 	};
 
 	type Props = {
 		open: boolean;
 		mode: "create" | "edit";
-		data?: Template01Data | null;
+		data?: MasterItemData | null;
 	};
 
 	let { open = $bindable(false), mode, data = null }: Props = $props();
@@ -35,30 +35,22 @@
 		pk: "border-blue-400 focus-visible:ring-blue-400",
 		required: "border-amber-400 focus-visible:ring-amber-400",
 		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40",
-		readonly: "border-black dark:border-white border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
+		purple:
+			"border-purple-400 focus-visible:ring-purple-400",
+		readonly:
+			"border-black dark:border-white border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
+		readonlyPurple:
+			"border-purple-400 border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
 	};
 
-	let descRef = $state<HTMLInputElement | null>(null);
 	let itemAcct = $state("");
-	let dateValidStr = $state("");
-
-	function toDateInputValue(date: Date): string {
-		const d = new Date(date);
-		return d.toISOString().slice(0, 10);
-	}
 
 	$effect(() => {
 		if (open) {
 			if (data) {
 				itemAcct = data.itemAcct;
-				dateValidStr = data.dateValid ? toDateInputValue(data.dateValid) : "";
 			} else {
 				itemAcct = "";
-				dateValidStr = "";
-			}
-			// Auto-focus Desc when PK is readonly (edit mode)
-			if (isReadonly && descRef) {
-				requestAnimationFrame(() => descRef?.focus());
 			}
 		}
 	});
@@ -70,8 +62,8 @@
 			<Dialog.Title>{title}</Dialog.Title>
 			<Dialog.Description>
 				{mode === "create"
-					? "Create a new template record."
-					: "Update template record details."}
+					? "Create a new master item record."
+					: "Update master item record details."}
 			</Dialog.Description>
 		</Dialog.Header>
 		<form
@@ -87,30 +79,14 @@
 			}}
 		>
 			{#if mode === "edit" && data}
-				<input type="hidden" name="code" value={data.code} />
+				<input type="hidden" name="itemCode" value={data.itemCode} />
 			{/if}
 			<div class="grid gap-4 py-4">
-				<div class="grid gap-2">
-					<Label for="code" class="font-semibold text-blue-600 dark:text-blue-400">Code (PK)</Label>
-					<Input
-						id="code"
-						name="code"
-						value={data?.code ?? ""}
-						required
-						class={isReadonly ? inputClasses.readonly : inputClasses.pk}
-					/>
-				</div>
-				<div class="grid gap-2">
-					<Label for="desc" class="font-medium text-amber-600 dark:text-amber-400">Desc *</Label>
-					<Input id="desc" name="desc" value={data?.desc ?? ""} required class={inputClasses.required} bind:ref={descRef} />
-				</div>
-				<div class="grid gap-2">
-					<Label for="remark" class="text-muted-foreground">Remark</Label>
-					<Input id="remark" name="remark" value={data?.remark ?? ""} class={inputClasses.optional} />
-				</div>
-				<div class="grid gap-2">
-					<Label for="itemAcct" class="font-medium text-amber-600 dark:text-amber-400">Item Acct *</Label>
+				<div class="grid gap-2 relative">
+					<Label for="itemAcct" class="font-semibold text-purple-600 dark:text-purple-400">Item Acct * <span class="text-xs font-normal text-muted-foreground">(cannot be changed after save)</span></Label>
+					<!-- form submit 시 itemAcct가 비어있으면 SearchableSelect 위치에 브라우저 네이티브 "이 입력란을 작성하세요" 메시지 표시 -->
 					<div class="relative">
+						<!-- 다른 input과 동일하게 입력란 가운데 아래에 validation 말풍선이 뜨도록 SearchableSelect 전체 영역을 덮는 투명 input -->
 						<input
 							type="text"
 							class="absolute inset-0 opacity-0 pointer-events-none cursor-default"
@@ -124,13 +100,32 @@
 							items={acctItems}
 							bind:value={itemAcct}
 							placeholder="Search item acct..."
-							class={inputClasses.required}
+							class={isReadonly ? inputClasses.readonlyPurple : inputClasses.purple}
+							disabled={isReadonly}
 						/>
 					</div>
 				</div>
 				<div class="grid gap-2">
-					<Label for="dateValid" class="text-muted-foreground">Date Valid</Label>
-					<Input id="dateValid" name="dateValid" type="date" bind:value={dateValidStr} class={inputClasses.optional} />
+					<Label for="itemCode" class="font-semibold text-blue-600 dark:text-blue-400">Item Code (PK)</Label>
+					<Input
+						id="itemCode"
+						name="itemCode"
+						value={data?.itemCode ?? ""}
+						required
+						class={isReadonly ? inputClasses.readonly : inputClasses.pk}
+					/>
+				</div>
+				<div class="grid gap-2">
+					<Label for="itemDesc" class="font-medium text-amber-600 dark:text-amber-400">Item Desc *</Label>
+					<Input id="itemDesc" name="itemDesc" value={data?.itemDesc ?? ""} required class={inputClasses.required} />
+				</div>
+				<div class="grid gap-2">
+					<Label for="itemSpec" class="text-muted-foreground">Item Spec</Label>
+					<Input id="itemSpec" name="itemSpec" value={data?.itemSpec ?? ""} class={inputClasses.optional} />
+				</div>
+				<div class="grid gap-2">
+					<Label for="itemRemark" class="text-muted-foreground">Item Remark</Label>
+					<Input id="itemRemark" name="itemRemark" value={data?.itemRemark ?? ""} class={inputClasses.optional} />
 				</div>
 			</div>
 			<Dialog.Footer>

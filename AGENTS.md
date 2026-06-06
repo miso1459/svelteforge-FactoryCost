@@ -118,3 +118,5 @@ After modifying `schema.ts`, also update the `SCHEMA_SQL` in `test-utils.ts` and
 - 복잡하거나 영향 범위가 큰 작업은 구현 전에 반드시 핵심 사항을 먼저 확인한다.
 - 질문은 열린 질문보다 a/b/c 선택형이나 yes/no 형태로 한다.
 - 사용자가 "그냥 해줘"라고 하면, 가정한 사항들을 번호 목록으로 제시하고 승인을 받은 뒤 진행한다.
+
+## 작업 완료되면 커밋
