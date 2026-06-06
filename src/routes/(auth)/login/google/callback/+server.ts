@@ -100,7 +100,7 @@ export const GET: RequestHandler = async ({ url, cookies, request, getClientAddr
 			passwordHash,
 			name: googleUser.name || emailPrefix,
 			avatarUrl: googleUser.picture || null,
-			role: "viewer",
+			role: "guest",
 		});
 	} catch {
 		// Username or email conflict — try to link to existing user by email

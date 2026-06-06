@@ -111,6 +111,8 @@
 				return "default" as const;
 			case "editor":
 				return "secondary" as const;
+			case "guest":
+				return "outline" as const;
 			default:
 				return "outline" as const;
 		}

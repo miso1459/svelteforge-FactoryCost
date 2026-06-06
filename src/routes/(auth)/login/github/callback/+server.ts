@@ -126,7 +126,7 @@ export const GET: RequestHandler = async ({ url, cookies, request, getClientAddr
 			passwordHash,
 			name: githubUser.name || githubUser.login,
 			avatarUrl: githubUser.avatar_url || null,
-			role: "viewer",
+			role: "guest",
 		});
 	} catch {
 		// Username or email conflict — link to existing user by email

@@ -133,6 +133,10 @@
 		return sortDir === "asc" ? ArrowUpIcon : ArrowDownIcon;
 	}
 
+	function compositeId(r: typeof data.records[0]) {
+		return `${pkFmt(r.documentDt)}|${r.code}`;
+	}
+
 	function toggleSelect(id: string) {
 		const next = new Set(selectedIds);
 		if (next.has(id)) next.delete(id);
@@ -144,7 +148,7 @@
 		if (selectedIds.size === paginated.length) {
 			selectedIds = new Set();
 		} else {
-			selectedIds = new Set(paginated.map((r) => pkFmt(r.documentDt)));
+			selectedIds = new Set(paginated.map((r) => compositeId(r)));
 		}
 	}
 
@@ -176,8 +180,8 @@
 		editOpen = true;
 	}
 
-	function openDelete(id: string) {
-		deleteId = id;
+	function openDelete(dateStr: string, code: string) {
+		deleteId = `${dateStr}|${code}`;
 		deleteOpen = true;
 	}
 
@@ -306,8 +310,8 @@
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each paginated as record (pkFmt(record.documentDt))}
-					{@const rid = pkFmt(record.documentDt)}
+				{#each paginated as record (compositeId(record))}
+					{@const rid = compositeId(record)}
 					<Table.Row class={selectedIds.has(rid) ? "bg-muted/50" : ""}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
@@ -336,7 +340,7 @@
 									variant="ghost"
 									size="icon"
 									class="text-destructive size-8"
-									onclick={() => openDelete(rid)}
+									onclick={() => openDelete(rid, record.code)}
 								>
 									<TrashIcon class="size-4" />
 								</Button>

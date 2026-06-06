@@ -35,6 +35,7 @@
 		admin: { label: "Admin", color: "var(--chart-1)" },
 		editor: { label: "Editor", color: "var(--chart-3)" },
 		viewer: { label: "Viewer", color: "var(--chart-2)" },
+		guest: { label: "Guest", color: "var(--chart-5)" },
 	} satisfies Chart.ChartConfig;
 
 	const contentTrendConfig = {
@@ -72,6 +73,8 @@
 					return roleChartConfig.admin.color;
 				case "editor":
 					return roleChartConfig.editor.color;
+				case "guest":
+					return roleChartConfig.guest.color;
 				default:
 					return roleChartConfig.viewer.color;
 			}

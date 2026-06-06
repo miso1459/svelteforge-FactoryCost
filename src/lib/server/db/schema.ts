@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, primaryKey } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
 	id: text("id").primaryKey(),
@@ -107,22 +107,28 @@ export const template01 = sqliteTable("template01", {
 		.$defaultFn(() => new Date()),
 });
 
-export const template02 = sqliteTable("template02", {
-	documentDt: integer("document_dt", { mode: "timestamp" }).primaryKey(),
-	code: text("code").notNull(),
-	desc: text("desc").notNull(),
-	remark: text("remark"),
-	itemAcct: text("item_acct").notNull(),
-	dateValid: integer("date_valid", { mode: "timestamp" }),
-	createdBy: text("created_by").notNull(),
-	createdAt: integer("created_at", { mode: "timestamp" })
-		.notNull()
-		.$defaultFn(() => new Date()),
-	updatedBy: text("updated_by").notNull(),
-	updatedAt: integer("updated_at", { mode: "timestamp" })
-		.notNull()
-		.$defaultFn(() => new Date()),
-});
+export const template02 = sqliteTable(
+	"template02",
+	{
+		documentDt: integer("document_dt", { mode: "timestamp" }).notNull(),
+		code: text("code").notNull(),
+		desc: text("desc").notNull(),
+		remark: text("remark"),
+		itemAcct: text("item_acct").notNull(),
+		dateValid: integer("date_valid", { mode: "timestamp" }),
+		createdBy: text("created_by").notNull(),
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+		updatedBy: text("updated_by").notNull(),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.notNull()
+			.$defaultFn(() => new Date()),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.documentDt, table.code] }),
+	})
+);
 
 export const appSettings = sqliteTable("app_settings", {
 	key: text("key").primaryKey(),

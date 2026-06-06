@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 	password_hash text NOT NULL,
 	name text NOT NULL,
 	avatar_url text,
-	role text DEFAULT 'viewer' NOT NULL,
+	role text DEFAULT 'guest' NOT NULL,
 	created_at integer NOT NULL,
 	updated_at integer NOT NULL
 );
@@ -94,7 +94,7 @@ export async function createTestUser(
 		name: string;
 		email: string;
 		username: string;
-		role: "admin" | "editor" | "viewer";
+		role: "admin" | "editor" | "viewer" | "guest";
 	}> = {}
 ) {
 	const id = overrides.id ?? generateId(10);
@@ -111,7 +111,7 @@ export async function createTestUser(
 		email: overrides.email ?? `${id}@test.com`,
 		username: overrides.username ?? `user_${id.slice(0, 8)}`,
 		passwordHash,
-		role: overrides.role ?? "viewer",
+		role: overrides.role ?? "guest",
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	});

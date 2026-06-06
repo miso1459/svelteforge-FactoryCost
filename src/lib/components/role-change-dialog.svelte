@@ -47,6 +47,7 @@
 							<Select.Item value="admin">Admin</Select.Item>
 							<Select.Item value="editor">Editor</Select.Item>
 							<Select.Item value="viewer">Viewer</Select.Item>
+							<Select.Item value="guest">Guest</Select.Item>
 						</Select.Content>
 					</Select.Root>
 				</div>

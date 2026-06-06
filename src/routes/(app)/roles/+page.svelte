@@ -40,6 +40,8 @@
 				return "border-primary/20 bg-primary/5";
 			case "editor":
 				return "border-blue-500/20 bg-blue-500/5";
+			case "guest":
+				return "border-muted-foreground/20 bg-muted/5";
 			default:
 				return "border-muted";
 		}

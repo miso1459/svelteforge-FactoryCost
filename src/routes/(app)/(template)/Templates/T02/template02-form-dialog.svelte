@@ -93,6 +93,7 @@
 		>
 			{#if mode === "edit" && data}
 				<input type="hidden" name="documentDt" value={data.documentDt} />
+				<input type="hidden" name="code" value={data.code} />
 			{/if}
 			<div class="grid gap-4 py-4">
 				<div class="grid gap-2">

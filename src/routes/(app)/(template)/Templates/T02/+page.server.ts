@@ -1,7 +1,7 @@
 import { db } from "$lib/server/db/index.js";
 import { template02 } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
-import { eq, inArray, desc } from "drizzle-orm";
+import { and, eq, inArray, desc } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -100,7 +100,6 @@ export const actions: Actions = {
 			await db
 				.update(template02)
 				.set({
-					code,
 					desc,
 					remark: typeof remark === "string" && remark.trim() ? remark : null,
 					itemAcct,
@@ -108,7 +107,12 @@ export const actions: Actions = {
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
 				})
-				.where(eq(template02.documentDt, documentDt));
+				.where(
+					and(
+						eq(template02.documentDt, documentDt),
+						eq(template02.code, code)
+					)
+				);
 		} catch {
 			return fail(400, { message: "Update failed" });
 		}
@@ -126,9 +130,23 @@ export const actions: Actions = {
 			return fail(400, { message: "ID is required" });
 		}
 
+		// Composite key: dateStr|code
+		const parts = id.split("|");
+		if (parts.length !== 2) {
+			return fail(400, { message: "Invalid ID" });
+		}
+		const documentDt = new Date(parts[0] + "T00:00:00");
+		const code = parts[1];
+
 		try {
-			const documentDt = new Date(id + "T00:00:00");
-			await db.delete(template02).where(eq(template02.documentDt, documentDt));
+			await db
+				.delete(template02)
+				.where(
+					and(
+						eq(template02.documentDt, documentDt),
+						eq(template02.code, code)
+					)
+				);
 		} catch {
 			return fail(400, { message: "Delete failed" });
 		}
@@ -152,8 +170,20 @@ export const actions: Actions = {
 		}
 
 		try {
-			const dates = ids.map((id) => new Date(id + "T00:00:00"));
-			await db.delete(template02).where(inArray(template02.documentDt, dates));
+			for (const id of ids) {
+				const parts = id.split("|");
+				if (parts.length !== 2) continue;
+				const dt = new Date(parts[0] + "T00:00:00");
+				const cd = parts[1];
+				await db
+					.delete(template02)
+					.where(
+						and(
+							eq(template02.documentDt, dt),
+							eq(template02.code, cd)
+						)
+					);
+			}
 		} catch {
 			return fail(400, { message: "Bulk delete failed" });
 		}

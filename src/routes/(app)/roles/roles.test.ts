@@ -42,7 +42,7 @@ describe("Roles page", () => {
 			} as any);
 
 			expect(result.roles).toBeInstanceOf(Array);
-			expect(result.roles.length).toBe(3);
+			expect(result.roles.length).toBe(4);
 
 			const adminRole = result.roles.find((r: any) => r.name === "admin");
 			expect(adminRole).toBeDefined();
