@@ -14,6 +14,9 @@
 	import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
 	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import DownloadIcon from "@lucide/svelte/icons/download";
+import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
+import * as Dialog from "$lib/components/ui/dialog/index.js";
+import { Label } from "$lib/components/ui/label/index.js";
 	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
@@ -39,6 +42,13 @@
 		dateValid: Date | null;
 	} | null>(null);
 	let deleteId = $state("");
+	let auditOpen = $state(false);
+	let auditRecord = $state<{
+		createdBy: string;
+		updatedBy: string;
+		createdAt: Date | null;
+		updatedAt: Date | null;
+	} | null>(null);
 
 	// Resolve item_acct code to display value
 	function itemAcctLabel(code: string): string {
@@ -52,9 +62,7 @@
 				r.code.toLowerCase().includes(search.toLowerCase()) ||
 				r.desc.toLowerCase().includes(search.toLowerCase()) ||
 				(r.remark ?? "").toLowerCase().includes(search.toLowerCase()) ||
-				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase()) ||
-				r.createdBy.toLowerCase().includes(search.toLowerCase()) ||
-				r.updatedBy.toLowerCase().includes(search.toLowerCase())
+				itemAcctLabel(r.itemAcct).toLowerCase().includes(search.toLowerCase())
 		)
 	);
 
@@ -146,6 +154,16 @@
 		deleteOpen = true;
 	}
 
+	function openAudit(record: (typeof data.records)[0]) {
+		auditRecord = {
+			createdBy: record.createdBy,
+			updatedBy: record.updatedBy,
+			createdAt: record.createdAt,
+			updatedAt: record.updatedAt,
+		};
+		auditOpen = true;
+	}
+
 	function handleExport(format: "csv" | "json") {
 		const exportData = filtered.map((r) => ({
 			code: r.code,
@@ -153,10 +171,6 @@
 			remark: r.remark ?? "",
 			itemAcct: itemAcctLabel(r.itemAcct),
 			dateValid: formatDate(r.dateValid),
-			createdBy: r.createdBy,
-			updatedBy: r.updatedBy,
-			createdAt: formatDateTime(r.createdAt),
-			updatedAt: formatDateTime(r.updatedAt),
 		}));
 		if (format === "csv") exportToCSV(exportData, "template01");
 		else exportToJSON(exportData, "template01");
@@ -168,10 +182,6 @@
 		{ key: "remark", label: "Remark" },
 		{ key: "itemAcct", label: "Item Acct" },
 		{ key: "dateValid", label: "Date Valid" },
-		{ key: "createdBy", label: "Created By" },
-		{ key: "updatedBy", label: "Updated By" },
-		{ key: "createdAt", label: "Created At" },
-		{ key: "updatedAt", label: "Updated At" },
 	];
 </script>
 
@@ -252,7 +262,7 @@
 							</button>
 						</Table.Head>
 					{/each}
-					<Table.Head class="sticky right-0 z-[1] w-[100px] bg-background">Actions</Table.Head>
+					<Table.Head class="sticky right-0 z-[1] w-[140px] bg-background">Actions</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -271,12 +281,11 @@
 						<Table.Cell class="text-muted-foreground">{record.remark ?? "—"}</Table.Cell>
 						<Table.Cell>{itemAcctLabel(record.itemAcct)}</Table.Cell>
 						<Table.Cell class="text-muted-foreground">{formatDate(record.dateValid)}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.createdBy}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.updatedBy}</Table.Cell>
-						<Table.Cell class="text-muted-foreground text-sm">{formatDateTime(record.createdAt)}</Table.Cell>
-						<Table.Cell class="text-muted-foreground text-sm">{formatDateTime(record.updatedAt)}</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">
 							<div class="flex items-center gap-1">
+								<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit(record)}>
+									<ScrollTextIcon class="size-4" />
+								</Button>
 								<Button variant="ghost" size="icon" class="size-8" onclick={() => openEdit(record)}>
 									<PencilIcon class="size-4" />
 								</Button>
@@ -293,7 +302,7 @@
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={11} class="h-24 text-center">
+						<Table.Cell colspan={7} class="h-24 text-center">
 							{search ? "No records match your search." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
@@ -307,3 +316,35 @@
 <Template01FormDialog bind:open={createOpen} mode="create" />
 <Template01FormDialog bind:open={editOpen} mode="edit" data={editData} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
+
+<Dialog.Root bind:open={auditOpen}>
+	<Dialog.Content class="sm:max-w-[400px]">
+		<Dialog.Header>
+			<Dialog.Title>Audit Trail</Dialog.Title>
+			<Dialog.Description>Record creation and modification history.</Dialog.Description>
+		</Dialog.Header>
+		{#if auditRecord}
+			<div class="grid gap-4 py-4">
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Created By</Label>
+					<p class="text-sm font-medium">{auditRecord.createdBy}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Updated By</Label>
+					<p class="text-sm font-medium">{auditRecord.updatedBy}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Created At</Label>
+					<p class="text-sm font-medium">{formatDateTime(auditRecord.createdAt)}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Updated At</Label>
+					<p class="text-sm font-medium">{formatDateTime(auditRecord.updatedAt)}</p>
+				</div>
+			</div>
+		{/if}
+		<Dialog.Footer>
+			<Button onclick={() => (auditOpen = false)}>Close</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
