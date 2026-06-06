@@ -285,7 +285,7 @@
 										<Select.Item value="America/Los_Angeles">America/Los_Angeles</Select.Item>
 										<Select.Item value="Europe/London">Europe/London</Select.Item>
 										<Select.Item value="Europe/Berlin">Europe/Berlin</Select.Item>
-										<Select.Item value="Asia/Tokyo">Asia/Tokyo</Select.Item>
+										<Select.Item value="Asia/Seoul">Asia/Seoul</Select.Item>
 									</Select.Content>
 								</Select.Root>
 							</div>

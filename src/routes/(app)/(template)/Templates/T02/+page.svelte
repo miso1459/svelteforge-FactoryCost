@@ -16,9 +16,11 @@
 	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import DownloadIcon from "@lucide/svelte/icons/download";
 import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
+import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
 import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
+	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
 	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 
@@ -70,7 +72,8 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 
 	function pkFmt(dt: Date | null) {
 		if (!dt) return "";
-		return dateStr(new Date(dt));
+		const d = new Date(dt);
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 	}
 
 	// Resolve item_acct code to display value
@@ -207,6 +210,15 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 		createOpen = true;
 	}
 
+	let refreshing = $state(false);
+
+	async function handleRefresh() {
+		refreshing = true;
+		await invalidateAll();
+		refreshing = false;
+		toast.success("Data refreshed");
+	}
+
 	function handleExport(format: "csv" | "json") {
 		const exportData = filtered.map((r) => ({
 			documentDt: formatDate(r.documentDt),
@@ -264,6 +276,9 @@ import * as Dialog from "$lib/components/ui/dialog/index.js";
 			<SearchIcon class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
 			<Input placeholder="Search records..." class="pl-9" bind:value={search} />
 		</div>
+		<Button variant="ghost" size="icon" class="size-8 shrink-0" onclick={handleRefresh} disabled={refreshing}>
+			<RefreshCwIcon class="size-4 {refreshing ? 'animate-spin' : ''}" />
+		</Button>
 		<p class="text-muted-foreground text-sm shrink-0">
 			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
 		</p>
