@@ -85,7 +85,7 @@
 
 	const inputClasses = {
 		required: "border-amber-400 focus-visible:ring-amber-400 focus:ring-2 focus:ring-amber-400",
-		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40",
+		optional: "border-muted-foreground/20 focus:ring-2 focus:ring-muted-foreground/40 focus-visible:ring-muted-foreground/40",
 	};
 
 	// ── Edit / Delete state ──────────────────────────────────────────────────
