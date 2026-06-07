@@ -4,6 +4,7 @@
 	import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
+	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
@@ -800,7 +801,8 @@
 						class={[
 							selectedIds.has(fi.item.id) ? 'bg-muted/50' : '',
 							draggedId === fi.item.id ? 'opacity-50' : '',
-							isModified ? 'bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20' : ''
+							isModified ? 'bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20' : '',
+							'[&>td]:align-top [&>td]:pb-0'
 						].filter(Boolean).join(' ')}
 						draggable={true}
 						ondragstart={(e) => handleDragStart(e, fi.item.id)}
@@ -895,11 +897,12 @@
 						<!-- Remark -->
 						<Table.Cell>
 							<div class="w-64">
-								<Input
+								<Textarea
 									value={remarkValue}
-									oninput={(e) => updateInlineChange(fi.item.id, "BOM_remark", (e.target as HTMLInputElement).value)}
+									oninput={(e) => updateInlineChange(fi.item.id, "BOM_remark", (e.target as HTMLTextAreaElement).value)}
 									placeholder="Enter remark..."
-									class={"h-8 text-xs " + inputClasses.optional}
+									class="text-xs min-h-[2rem]"
+									rows={1}
 								/>
 							</div>
 						</Table.Cell>
@@ -1072,7 +1075,7 @@
 				<!-- Remark -->
 				<div class="grid gap-2">
 					<Label for="create-remark" class="text-muted-foreground">Remark</Label>
-					<Input
+					<Textarea
 						id="create-remark"
 						name="BOM_remark"
 						bind:value={formRemark}
