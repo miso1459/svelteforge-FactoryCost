@@ -79,37 +79,37 @@ function validateBOM(
 ): { valid: boolean; message?: string } {
 	const childInfo = itemsMap[childCode];
 	if (!childInfo) {
-		return { valid: false, message: `유효하지 않은 BOM_item 코드입니다: ${childCode}` };
+		return { valid: false, message: `Invalid BOM_item code: ${childCode}` };
 	}
 
 	if (childInfo.itemAcct === "50") {
-		return { valid: false, message: "BOM_item(자식)은 상품('50')일 수 없습니다." };
+		return { valid: false, message: "BOM_item (child) cannot be Merchandise ('50')." };
 	}
 
 	if (parentCode) {
 		const parentInfo = itemsMap[parentCode];
 		if (!parentInfo) {
-			return { valid: false, message: `유효하지 않은 BOM_item_parent 코드입니다: ${parentCode}` };
+			return { valid: false, message: `Invalid BOM_item_parent code: ${parentCode}` };
 		}
 
 		if (parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-			return { valid: false, message: "부모 품목은 제품('10') 또는 반제품('20')만 가능합니다." };
+			return { valid: false, message: "Parent item must be Product ('10') or Semi-finished Product ('20')." };
 		}
 
 		// 부모-자식 ITEM_ACCT 제약
 		if (childInfo.itemAcct === "10" && parentInfo.itemAcct !== "10") {
-			return { valid: false, message: "자식이 제품('10')인 경우, 부모는 제품('10')이어야 합니다." };
+			return { valid: false, message: "If child is Product ('10'), parent must be Product ('10')." };
 		}
 		if (childInfo.itemAcct === "20" && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-			return { valid: false, message: "자식이 반제품('20')인 경우, 부모는 제품('10') 또는 반제품('20')이어야 합니다." };
+			return { valid: false, message: "If child is Semi-finished Product ('20'), parent must be Product ('10') or Semi-finished Product ('20')." };
 		}
 		if ((childInfo.itemAcct === "30" || childInfo.itemAcct === "40") && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-			return { valid: false, message: "자식이 원자재/부자재인 경우, 부모는 제품('10') 또는 반제품('20')이어야 합니다." };
+			return { valid: false, message: "If child is Raw/Sub material, parent must be Product ('10') or Semi-finished Product ('20')." };
 		}
 
 		// 순환 참조 검사
 		if (checkCircular(parentCode, childCode, flatBOM)) {
-			return { valid: false, message: "순환 참조가 발생하여 저장할 수 없습니다. (자식이 부모의 조상이 됨)" };
+			return { valid: false, message: "Circular reference detected. Cannot save. (Child is an ancestor of the parent)" };
 		}
 	}
 
@@ -155,13 +155,13 @@ export const actions: Actions = {
 		const BOM_remark = formData.get("BOM_remark") as string | null;
 
 		if (!BOM_item || BOM_item.trim().length === 0) {
-			return fail(400, { message: "BOM_item은 필수 입력입니다." });
+			return fail(400, { message: "BOM_item is required." });
 		}
 		if (isNaN(BOM_item_qty) || BOM_item_qty <= 0) {
-			return fail(400, { message: "BOM_item_qty는 0보다 커야 합니다." });
+			return fail(400, { message: "BOM_item_qty must be greater than 0." });
 		}
 		if (isNaN(BOM_item_parent_qty) || BOM_item_parent_qty <= 0) {
-			return fail(400, { message: "BOM_item_parent_qty는 0보다 커야 합니다." });
+			return fail(400, { message: "BOM_item_parent_qty must be greater than 0." });
 		}
 
 		// 비즈니스 규칙 검증을 위해 데이터 조회
@@ -201,7 +201,7 @@ export const actions: Actions = {
 				updatedAt: now,
 			});
 		} catch {
-			return fail(400, { message: "BOM 항목 생성에 실패했습니다." });
+			return fail(400, { message: "Failed to create BOM item." });
 		}
 
 		return { success: true };
@@ -219,16 +219,16 @@ export const actions: Actions = {
 		const BOM_remark = formData.get("BOM_remark") as string | null;
 
 		if (isNaN(id)) {
-			return fail(400, { message: "유효하지 않은 ID입니다." });
+			return fail(400, { message: "Invalid ID." });
 		}
 		if (!BOM_item || BOM_item.trim().length === 0) {
-			return fail(400, { message: "BOM_item은 필수 입력입니다." });
+			return fail(400, { message: "BOM_item is required." });
 		}
 		if (isNaN(BOM_item_qty) || BOM_item_qty <= 0) {
-			return fail(400, { message: "BOM_item_qty는 0보다 커야 합니다." });
+			return fail(400, { message: "BOM_item_qty must be greater than 0." });
 		}
 		if (isNaN(BOM_item_parent_qty) || BOM_item_parent_qty <= 0) {
-			return fail(400, { message: "BOM_item_parent_qty는 0보다 커야 합니다." });
+			return fail(400, { message: "BOM_item_parent_qty must be greater than 0." });
 		}
 
 		// 비즈니스 규칙 검증
@@ -256,7 +256,7 @@ export const actions: Actions = {
 				})
 				.where(eq(masterBOM.id, id));
 		} catch {
-			return fail(400, { message: "BOM 항목 수정에 실패했습니다." });
+			return fail(400, { message: "Failed to update BOM item." });
 		}
 
 		return { success: true };
@@ -270,7 +270,7 @@ export const actions: Actions = {
 		const id = parseInt(idRaw ?? "");
 
 		if (isNaN(id)) {
-			return fail(400, { message: "유효하지 않은 ID입니다." });
+			return fail(400, { message: "Invalid ID." });
 		}
 
 		const currentRow = await db.select().from(masterBOM).where(eq(masterBOM.id, id)).limit(1);
@@ -280,14 +280,14 @@ export const actions: Actions = {
 				.from(masterBOM)
 				.where(eq(masterBOM.BOM_item_parent, currentRow[0].BOM_item));
 			if ((childCount[0]?.value ?? 0) > 0) {
-				return fail(400, { message: "자식 BOM 항목을 먼저 삭제하세요." });
+				return fail(400, { message: "Please delete child BOM items first." });
 			}
 		}
 
 		try {
 			await db.delete(masterBOM).where(eq(masterBOM.id, id));
 		} catch {
-			return fail(400, { message: "삭제에 실패했습니다." });
+			return fail(400, { message: "Failed to delete." });
 		}
 
 		return { success: true };
@@ -300,7 +300,7 @@ export const actions: Actions = {
 		const idsRaw = formData.get("ids") as string | null;
 
 		if (!idsRaw?.trim()) {
-			return fail(400, { message: "선택된 항목이 없습니다." });
+			return fail(400, { message: "No items selected." });
 		}
 
 		const ids = idsRaw
@@ -309,7 +309,7 @@ export const actions: Actions = {
 			.filter((n) => !isNaN(n));
 
 		if (ids.length === 0) {
-			return fail(400, { message: "선택된 항목이 없습니다." });
+			return fail(400, { message: "No items selected." });
 		}
 
 		const blockedIds: number[] = [];
@@ -329,13 +329,13 @@ export const actions: Actions = {
 		const deleteIds = ids.filter((id) => !blockedIds.includes(id));
 
 		if (deleteIds.length === 0) {
-			return fail(400, { message: "선택한 항목 모두 자식이 있어 삭제할 수 없습니다." });
+			return fail(400, { message: "All selected items have children and cannot be deleted." });
 		}
 
 		try {
 			await db.delete(masterBOM).where(inArray(masterBOM.id, deleteIds));
 		} catch {
-			return fail(400, { message: "일괄 삭제에 실패했습니다." });
+			return fail(400, { message: "Failed to bulk delete." });
 		}
 
 		return { success: true, skippedIds: blockedIds };
@@ -348,7 +348,7 @@ export const actions: Actions = {
 		const updatesJson = formData.get("updates") as string | null;
 
 		if (!updatesJson) {
-			return fail(400, { message: "업데이트 데이터가 필요합니다." });
+			return fail(400, { message: "Update data is required." });
 		}
 
 		type ReorderItem = {
@@ -400,7 +400,7 @@ export const actions: Actions = {
 		const changesJson = formData.get("changes") as string | null;
 
 		if (!changesJson) {
-			return fail(400, { message: "변경 데이터가 없습니다." });
+			return fail(400, { message: "No change data." });
 		}
 
 		type ChangeItem = {
@@ -419,7 +419,7 @@ export const actions: Actions = {
 
 		for (const c of changes) {
 			if (!c.BOM_item || c.BOM_item_qty <= 0 || c.BOM_item_parent_qty <= 0) {
-				return fail(400, { message: "BOM 항목 수량은 0보다 커야 합니다." });
+				return fail(400, { message: "BOM item quantities must be greater than 0." });
 			}
 			
 			const currentItem = allFlatBOM.find(item => item.id === c.id);

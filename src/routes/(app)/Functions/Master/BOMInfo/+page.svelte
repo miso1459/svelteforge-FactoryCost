@@ -112,7 +112,7 @@
 
 	function revertAllChanges() {
 		changes = {};
-		toast.success("모든 수정사항이 취소되었습니다.");
+		toast.success("All changes reverted.");
 	}
 
 	// ── Hierarchical tree expand ─────────────────────────────────────────────
@@ -206,7 +206,7 @@
 	$effect(() => {
 		if (form?.message) toast.error(form.message);
 		if (form?.success) {
-			toast.success("BOM 정보가 정상적으로 저장되었습니다.");
+			toast.success("BOM saved successfully.");
 			createOpen = false;
 			editOpen = false;
 			deleteOpen = false;
@@ -295,7 +295,7 @@
 		refreshing = true;
 		await invalidateAll();
 		refreshing = false;
-		toast.success("BOM 정보를 새로고침했습니다.");
+		toast.success("Data refreshed.");
 	}
 
 	function handleExport(format: "csv" | "json") {
@@ -340,26 +340,26 @@
 
 	function validateBOMClient(parentCode: string | null, childCode: string): { valid: boolean; message?: string } {
 		const childInfo = data.itemsMap[childCode];
-		if (!childInfo) return { valid: false, message: "유효하지 않은 품목입니다." };
-		if (childInfo.itemAcct === "50") return { valid: false, message: "자식은 상품('50')일 수 없습니다." };
+		if (!childInfo) return { valid: false, message: "Invalid item." };
+		if (childInfo.itemAcct === "50") return { valid: false, message: "Child cannot be Merchandise ('50')." };
 
 		if (parentCode) {
 			const parentInfo = data.itemsMap[parentCode];
-			if (!parentInfo) return { valid: false, message: "유효하지 않은 부모 품목입니다." };
+			if (!parentInfo) return { valid: false, message: "Invalid parent item." };
 			if (parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-				return { valid: false, message: "부모 품목은 제품('10') 또는 반제품('20')만 가능합니다." };
+				return { valid: false, message: "Parent item must be Product ('10') or Semi-finished Product ('20')." };
 			}
 			if (childInfo.itemAcct === "10" && parentInfo.itemAcct !== "10") {
-				return { valid: false, message: "자식이 제품('10')인 경우, 부모는 제품('10')이어야 합니다." };
+				return { valid: false, message: "If child is Product ('10'), parent must be Product ('10')." };
 			}
 			if (childInfo.itemAcct === "20" && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-				return { valid: false, message: "자식이 반제품('20')인 경우, 부모는 제품('10') 또는 반제품('20')이어야 합니다." };
+				return { valid: false, message: "If child is Semi-finished Product ('20'), parent must be Product ('10') or Semi-finished Product ('20')." };
 			}
 			if ((childInfo.itemAcct === "30" || childInfo.itemAcct === "40") && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-				return { valid: false, message: "자식이 원자재/부자재인 경우, 부모는 제품('10') 또는 반제품('20')이어야 합니다." };
+				return { valid: false, message: "If child is Raw/Sub material, parent must be Product ('10') or Semi-finished Product ('20')." };
 			}
 			if (isAncestorOrSelfBOM(parentCode, childCode)) {
-				return { valid: false, message: "순환 참조가 발생하여 이동할 수 없습니다. (자식이 부모의 조상이 됨)" };
+				return { valid: false, message: "Circular reference detected. Cannot move. (Child is an ancestor of the parent)" };
 			}
 		}
 		return { valid: true };
@@ -448,7 +448,7 @@
 		// 비즈니스 밸리데이션 검사
 		const check = validateBOMClient(nextParentCode, draggedItem.BOM_item);
 		if (!check.valid) {
-			toast.error(check.message ?? "이동 제약사항을 만족하지 못합니다.");
+			toast.error(check.message ?? "Constraints validation failed.");
 			return;
 		}
 
@@ -476,10 +476,10 @@
 			const response = await fetch("?/reorderBOM", { method: "POST", body: fd });
 			if (response.ok) {
 				await invalidateAll();
-				toast.success("BOM 순서가 업데이트되었습니다.");
+				toast.success("BOM reordered successfully.");
 			} else {
 				const resData = await response.json();
-				toast.error(resData?.message || "업데이트에 실패했습니다.");
+				toast.error(resData?.message || "Failed to update.");
 			}
 			return;
 		}
@@ -515,10 +515,10 @@
 			const response = await fetch("?/reorderBOM", { method: "POST", body: fd });
 			if (response.ok) {
 				await invalidateAll();
-				toast.success("BOM 순서가 업데이트되었습니다.");
+				toast.success("BOM reordered successfully.");
 			} else {
 				const resData = await response.json();
-				toast.error(resData?.message || "업데이트에 실패했습니다.");
+				toast.error(resData?.message || "Failed to update.");
 			}
 			return;
 		}
@@ -545,10 +545,10 @@
 		const response = await fetch("?/reorderBOM", { method: "POST", body: fd });
 		if (response.ok) {
 			await invalidateAll();
-			toast.success("BOM 순서가 업데이트되었습니다.");
+			toast.success("BOM reordered successfully.");
 		} else {
 			const resData = await response.json();
-			toast.error(resData?.message || "업데이트에 실패했습니다.");
+			toast.error(resData?.message || "Failed to update.");
 		}
 	}
 
@@ -577,25 +577,25 @@
 		await handleDropWithSource(targetId, targetParentCode, sourceDraggedId, currentDropPosition);
 	}
 
-	const columns = ["Child Item / 소요 품목", "Parent Qty / 부모 기준수량", "Child Qty / 소요량", "Remark / 비고"];
+	const columns = ["Child Item", "Parent Qty", "Child Qty", "Remark"];
 </script>
 
 <svelte:head>
-	<title>BOM 관리 - SvelteForge Factory Cost</title>
+	<title>BOMs - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">BOM Info</h1>
-			<p class="text-muted-foreground">Manage Bill of Materials (BOM) structure and relationships.</p>
+			<h1 class="text-3xl font-bold tracking-tight">BOMs</h1>
+			<p class="text-muted-foreground">Manage Bill of Materials (BOM) structure and item hierarchy.</p>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if hasChanges}
 				<Button variant="outline" size="sm" onclick={revertAllChanges} class="border-amber-500 text-amber-500 hover:bg-amber-500/10">
 					<UndoIcon class="mr-2 size-4" />
-					수정 취소
+					Cancel
 				</Button>
 				<form
 					method="POST"
@@ -603,7 +603,7 @@
 					use:enhance={() => {
 						return async ({ result, update }) => {
 							if (result.type === "success" || result.type === "redirect") {
-								toast.success("수정된 BOM 정보가 저장되었습니다.");
+								toast.success("BOM saved successfully.");
 								changes = {};
 							}
 							await update();
@@ -621,13 +621,13 @@
 					)} />
 					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
 						<SaveIcon class="mr-2 size-4" />
-						BOM 저장
+						Save BOM
 					</Button>
 				</form>
 			{/if}
 			<Button onclick={() => openCreate()}>
 				<PlusIcon class="mr-2 size-4" />
-				BOM 추가
+				Add BOM
 			</Button>
 		</div>
 	</div>
@@ -811,7 +811,7 @@
 								<Input
 									value={remarkValue}
 									oninput={(e) => updateInlineChange(fi.item.id, "BOM_remark", (e.target as HTMLInputElement).value)}
-									placeholder="비고 입력"
+									placeholder="Enter remark..."
 									class="h-8 text-xs"
 								/>
 							</div>
@@ -852,7 +852,7 @@
 				{:else}
 					<Table.Row>
 						<Table.Cell colspan={6} class="h-24 text-center">
-							{search ? "검색 조건과 일치하는 BOM 항목이 없습니다." : "BOM 데이터가 없습니다."}
+							{search ? "No BOM items match your search." : "No BOM items found."}
 						</Table.Cell>
 					</Table.Row>
 				{/each}
@@ -865,7 +865,7 @@
 <!-- Delete Confirmation Dialog -->
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId !== null ? String(deleteId) : ""} itemName="BOM" />
 {#if deleteHasChildren && deleteOpen}
-	<p class="text-muted-foreground mt-1 text-xs text-center">주의: 하위 BOM 품목이 연결되어 있는 항목은 삭제할 수 없습니다.</p>
+	<p class="text-muted-foreground mt-1 text-xs text-center">Note: BOM items with children cannot be deleted.</p>
 {/if}
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
@@ -910,7 +910,7 @@
 	<Dialog.Content class="sm:max-w-[500px]">
 		<Dialog.Header>
 			<Dialog.Title>Add BOM Item</Dialog.Title>
-			<Dialog.Description>BOM 계층 구조에 신규 소요 품목을 등록합니다.</Dialog.Description>
+			<Dialog.Description>Register a new child item in the BOM hierarchy.</Dialog.Description>
 		</Dialog.Header>
 		<form
 			method="POST"
@@ -928,18 +928,18 @@
 			<div class="grid gap-4 py-4">
 				<!-- Parent Item -->
 				<div class="grid gap-2">
-					<Label for="create-parent" class="text-foreground">Parent Item / 부모 품목 (선택사항)</Label>
+					<Label for="create-parent" class="text-foreground">Parent Item (Optional)</Label>
 					<SearchableSelect
 						items={parentItemOptions}
 						bind:value={formParentId}
-						placeholder="최상위 레벨 (부모 없음)"
+						placeholder="Root level (no parent)"
 					/>
 					<input type="hidden" name="BOM_item_parent" value={formParentId ?? ""} />
 				</div>
 
 				<!-- Parent Qty -->
 				<div class="grid gap-2">
-					<Label for="create-parent-qty" class="text-foreground">Parent Qty / 부모 기준수량 *</Label>
+					<Label for="create-parent-qty" class="text-foreground">Parent Qty *</Label>
 					<Input
 						id="create-parent-qty"
 						name="BOM_item_parent_qty"
@@ -953,18 +953,18 @@
 
 				<!-- Child Item -->
 				<div class="grid gap-2">
-					<Label for="create-child" class="text-amber-600 dark:text-amber-400">Child Item / 소요 품목 *</Label>
+					<Label for="create-child" class="text-amber-600 dark:text-amber-400">Child Item *</Label>
 					<SearchableSelect
 						items={childItemOptions}
 						bind:value={formItem}
-						placeholder="소요 품목을 선택하세요"
+						placeholder="Select child item..."
 					/>
 					<input type="hidden" name="BOM_item" value={formItem} />
 				</div>
 
 				<!-- Child Qty -->
 				<div class="grid gap-2">
-					<Label for="create-child-qty" class="text-foreground">Child Qty / 소요량 *</Label>
+					<Label for="create-child-qty" class="text-foreground">Child Qty *</Label>
 					<Input
 						id="create-child-qty"
 						name="BOM_item_qty"
@@ -978,19 +978,19 @@
 
 				<!-- Remark -->
 				<div class="grid gap-2">
-					<Label for="create-remark" class="text-foreground">Remark / 비고</Label>
+					<Label for="create-remark" class="text-foreground">Remark</Label>
 					<Input
 						id="create-remark"
 						name="BOM_remark"
 						bind:value={formRemark}
-						placeholder="비고를 입력하세요"
+						placeholder="Enter remark..."
 					/>
 				</div>
 			</div>
 
 			<Dialog.Footer>
-				<Button type="button" variant="outline" onclick={() => { createOpen = false; resetForm(); }}>취소</Button>
-				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">추가</Button>
+				<Button type="button" variant="outline" onclick={() => { createOpen = false; resetForm(); }}>Cancel</Button>
+				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">Add</Button>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>
