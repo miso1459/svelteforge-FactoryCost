@@ -1,5 +1,5 @@
 import { db } from "$lib/server/db/index.js";
-import { masterBOM, masterItem } from "$lib/server/db/schema.js";
+import { masterBOM, masterItem, menus } from "$lib/server/db/schema.js";
 import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq, inArray, count } from "drizzle-orm";
@@ -140,7 +140,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 		])
 	);
 
-	return { flatBOM, bomTree, itemInfo, itemsMap, currentUserName: locals.user.name };
+	// menus 테이블에서 페이지 타이틀 및 설명 정보 조회
+	const pageMenuInfo = await db
+		.select({ name: menus.name, desc: menus.desc })
+		.from(menus)
+		.where(eq(menus.path, "/Functions/Master/BOMInfo"))
+		.limit(1);
+
+	const pageTitle = pageMenuInfo[0]?.name ?? "BOMs";
+	const pageDesc = pageMenuInfo[0]?.desc ?? "Manage Bill of Materials (BOM) structure and item hierarchy.";
+
+	return { flatBOM, bomTree, itemInfo, itemsMap, pageTitle, pageDesc, currentUserName: locals.user.name };
 };
 
 export const actions: Actions = {

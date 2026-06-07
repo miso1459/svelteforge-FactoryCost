@@ -581,15 +581,15 @@
 </script>
 
 <svelte:head>
-	<title>BOMs - SvelteForge Factory Cost</title>
+	<title>{data.pageTitle} - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">BOMs</h1>
-			<p class="text-muted-foreground">Manage Bill of Materials (BOM) structure and item hierarchy.</p>
+			<h1 class="text-3xl font-bold tracking-tight">{data.pageTitle}</h1>
+			<p class="text-muted-foreground">{data.pageDesc}</p>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if hasChanges}
@@ -764,15 +764,6 @@
 										placeholder="Select Child Item..."
 										class="h-8 text-xs"
 									/>
-								</div>
-								
-								<div class="ml-2 flex flex-col justify-center max-w-[200px] truncate">
-									<span class="text-xs font-semibold text-foreground">
-										{itemDetails?.itemDesc || ""}
-									</span>
-									<span class="text-[10px] text-muted-foreground">
-										Spec: {itemDetails?.itemSpec || "-"} | Unit: {itemDetails?.itemUnit || "-"}
-									</span>
 								</div>
 							</div>
 						</Table.Cell>
