@@ -106,6 +106,37 @@
 	let formItemQty = $state(1);
 	let formRemark = $state("");
 
+	// ── Qty Display formatting (Create dialog) ──────────────────────────────
+	let formParentQtyDisplay = $state("");
+	let formItemQtyDisplay = $state("");
+
+	function initQtyDisplay() {
+		formParentQty = 1;
+		formItemQty = 1;
+		formParentQtyDisplay = formatQty(1, data.formatQty);
+		formItemQtyDisplay = formatQty(1, data.formatQty);
+	}
+
+	function onParentQtyInput(e: Event) {
+		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+		formParentQty = raw ? Number(raw) : 1;
+		formParentQtyDisplay = raw;
+	}
+
+	function onParentQtyBlur() {
+		formParentQtyDisplay = formatQty(formParentQty, data.formatQty);
+	}
+
+	function onItemQtyInput(e: Event) {
+		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+		formItemQty = raw ? Number(raw) : 1;
+		formItemQtyDisplay = raw;
+	}
+
+	function onItemQtyBlur() {
+		formItemQtyDisplay = formatQty(formItemQty, data.formatQty);
+	}
+
 	// ── Inline Edit State ────────────────────────────────────────────────────
 	// 각 id 마다 변경된 사항을 저장할 상태 맵
 	let changes = $state<Record<number, {
@@ -152,7 +183,25 @@
 
 	function revertAllChanges() {
 		changes = {};
+		tableQtyDisplay = {};
 		toast.success("All changes reverted.");
+	}
+
+	// ── Table inline qty display formatting ──────────────────────────────────
+	let tableQtyDisplay = $state<Record<number, { parent: string; child: string }>>({});
+
+	function tableParentQtyBlur(e: Event, id: number) {
+		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+		if (!changes[id]) return;
+		const val = changes[id].BOM_parent_qty;
+		tableQtyDisplay[id] = { ...tableQtyDisplay[id], parent: formatQty(val, data.formatQty) };
+	}
+
+	function tableChildQtyBlur(e: Event, id: number) {
+		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+		if (!changes[id]) return;
+		const val = changes[id].BOM_item_qty;
+		tableQtyDisplay[id] = { ...tableQtyDisplay[id], child: formatQty(val, data.formatQty) };
 	}
 
 	// ── Hierarchical tree expand ─────────────────────────────────────────────
@@ -289,10 +338,9 @@
 	// ── Dialog / Reset ───────────────────────────────────────────────────────
 	function resetForm() {
 		formParentId = "";
-		formParentQty = 1;
 		formItem = "";
-		formItemQty = 1;
 		formRemark = "";
+		initQtyDisplay();
 	}
 
 	function openCreate(presetParentId?: string) {
@@ -812,11 +860,15 @@
 						<Table.Cell>
 							<div class="w-24">
 								<Input
-									type="number"
-									step={qtyStep}
-									min={qtyMin}
-									value={parentQtyValue}
-									oninput={(e) => updateInlineChange(fi.item.id, "BOM_parent_qty", (e.target as HTMLInputElement).value)}
+									type="text"
+									inputmode="decimal"
+									value={tableQtyDisplay[fi.item.id]?.parent ?? formatQty(parentQtyValue, data.formatQty)}
+									oninput={(e) => {
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										updateInlineChange(fi.item.id, "BOM_parent_qty", raw);
+										tableQtyDisplay[fi.item.id] = { ...tableQtyDisplay[fi.item.id], parent: raw };
+									}}
+									onblur={(e) => tableParentQtyBlur(e, fi.item.id)}
 									class={"h-8 text-right text-xs " + inputClasses.required}
 								/>
 							</div>
@@ -826,11 +878,15 @@
 						<Table.Cell>
 							<div class="w-24">
 								<Input
-									type="number"
-									step={qtyStep}
-									min={qtyMin}
-									value={itemQtyValue}
-									oninput={(e) => updateInlineChange(fi.item.id, "BOM_item_qty", (e.target as HTMLInputElement).value)}
+									type="text"
+									inputmode="decimal"
+									value={tableQtyDisplay[fi.item.id]?.child ?? formatQty(itemQtyValue, data.formatQty)}
+									oninput={(e) => {
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										updateInlineChange(fi.item.id, "BOM_item_qty", raw);
+										tableQtyDisplay[fi.item.id] = { ...tableQtyDisplay[fi.item.id], child: raw };
+									}}
+									onblur={(e) => tableChildQtyBlur(e, fi.item.id)}
 									class={"h-8 text-right text-xs " + inputClasses.required}
 								/>
 							</div>
@@ -972,13 +1028,14 @@
 				<!-- Parent Qty -->
 				<div class="grid gap-2">
 					<Label for="create-parent-qty" class="text-amber-600 dark:text-amber-400">Parent Qty *</Label>
+					<input type="hidden" name="BOM_item_parent_qty" value={formParentQty} />
 					<Input
 						id="create-parent-qty"
-						name="BOM_item_parent_qty"
-						type="number"
-						step={qtyStep}
-						min={qtyMin}
-						bind:value={formParentQty}
+						type="text"
+						inputmode="decimal"
+						value={formParentQtyDisplay}
+						oninput={onParentQtyInput}
+						onblur={onParentQtyBlur}
 						required
 						class={inputClasses.required}
 					/>
@@ -999,13 +1056,14 @@
 				<!-- Child Qty -->
 				<div class="grid gap-2">
 					<Label for="create-child-qty" class="text-amber-600 dark:text-amber-400">Child Qty *</Label>
+					<input type="hidden" name="BOM_item_qty" value={formItemQty} />
 					<Input
 						id="create-child-qty"
-						name="BOM_item_qty"
-						type="number"
-						step={qtyStep}
-						min={qtyMin}
-						bind:value={formItemQty}
+						type="text"
+						inputmode="decimal"
+						value={formItemQtyDisplay}
+						oninput={onItemQtyInput}
+						onblur={onItemQtyBlur}
 						required
 						class={inputClasses.required}
 					/>
