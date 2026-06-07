@@ -802,7 +802,7 @@
 										items={childItemOptions}
 										bind:value={() => itemValue, (v) => updateInlineChange(fi.item.id, "BOM_item", v)}
 										placeholder="Select Child Item..."
-										class="h-8 text-xs"
+										class={"h-8 text-xs " + inputClasses.required}
 									/>
 								</div>
 							</div>
@@ -817,7 +817,7 @@
 									min={qtyMin}
 									value={parentQtyValue}
 									oninput={(e) => updateInlineChange(fi.item.id, "BOM_parent_qty", (e.target as HTMLInputElement).value)}
-									class="h-8 text-right text-xs"
+									class={"h-8 text-right text-xs " + inputClasses.required}
 								/>
 							</div>
 						</Table.Cell>
@@ -831,7 +831,7 @@
 									min={qtyMin}
 									value={itemQtyValue}
 									oninput={(e) => updateInlineChange(fi.item.id, "BOM_item_qty", (e.target as HTMLInputElement).value)}
-									class="h-8 text-right text-xs"
+									class={"h-8 text-right text-xs " + inputClasses.required}
 								/>
 							</div>
 						</Table.Cell>
@@ -843,7 +843,7 @@
 									value={remarkValue}
 									oninput={(e) => updateInlineChange(fi.item.id, "BOM_remark", (e.target as HTMLInputElement).value)}
 									placeholder="Enter remark..."
-									class="h-8 text-xs"
+									class={"h-8 text-xs " + inputClasses.optional}
 								/>
 							</div>
 						</Table.Cell>
