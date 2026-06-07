@@ -7,7 +7,6 @@
 	import MasterItemFormDialog from "./master-item-form-dialog.svelte";
 	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
 	import PlusIcon from "@lucide/svelte/icons/plus";
-	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import TrashIcon from "@lucide/svelte/icons/trash-2";
 	import SearchIcon from "@lucide/svelte/icons/search";
 	import ArrowUpDownIcon from "@lucide/svelte/icons/arrow-up-down";
@@ -15,6 +14,7 @@
 	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import DownloadIcon from "@lucide/svelte/icons/download";
 import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
+import { Switch } from "$lib/components/ui/switch/index.js";
 import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
 import * as Dialog from "$lib/components/ui/dialog/index.js";
 import { Label } from "$lib/components/ui/label/index.js";
@@ -147,6 +147,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 		if (form?.success) {
 			toast.success("Record saved successfully");
 			selectedIds = new Set();
+			changes = {};
+			stdPriceDisplays = {};
 		}
 	});
 
@@ -268,6 +270,15 @@ import { Label } from "$lib/components/ui/label/index.js";
 		<p class="text-muted-foreground text-sm">
 			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
 		</p>
+		{#if hasChanges}
+			<Button variant="outline" size="sm" onclick={revertAllChanges} class="border-amber-500 text-amber-500 hover:bg-amber-500/10">
+				Cancel
+			</Button>
+			<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; stdPriceDisplays = {}; } await update(); }; }}>
+				<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ itemCode: id, itemDesc: val.itemDesc, itemSpec: val.itemSpec || null, itemUnit: val.itemUnit || null, stdPrice: val.stdPrice, isActive: val.isActive, itemRemark: val.itemRemark || null })))} />
+				<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">Save</Button>
+			</form>
+		{/if}
 		<div class="ml-auto flex items-center gap-2">
 			{#if selectedIds.size > 0}
 				<form method="POST" action="?/bulkDelete" use:enhance>
@@ -325,7 +336,12 @@ import { Label } from "$lib/components/ui/label/index.js";
 			</Table.Header>
 			<Table.Body>
 				{#each paginated as record (record.itemCode)}
-					<Table.Row class={selectedIds.has(record.itemCode) ? "bg-muted/50 [&>td]:align-top [&>td]:pt-2 [&>td]:pb-0" : "[&>td]:align-top [&>td]:pt-2 [&>td]:pb-0"}>
+					{@const isModified = Boolean(changes[record.itemCode])}
+					<Table.Row class={[
+						selectedIds.has(record.itemCode) ? 'bg-muted/50' : '',
+						isModified ? 'bg-amber-500/10 dark:bg-amber-500/20' : '',
+						'[&>td]:align-top [&>td]:pt-2 [&>td]:pb-0'
+					].filter(Boolean).join(' ')}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
 								type="checkbox"
@@ -336,25 +352,74 @@ import { Label } from "$lib/components/ui/label/index.js";
 						</Table.Cell>
 						<Table.Cell>{itemAcctLabel(record.itemAcct)}</Table.Cell>
 						<Table.Cell class="font-medium font-mono">{record.itemCode}</Table.Cell>
-						<Table.Cell>{record.itemDesc}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{record.itemSpec ?? "—"}</Table.Cell>
-						<Table.Cell>{record.itemUnit ?? "—"}</Table.Cell>
-						<Table.Cell class="text-right font-mono">{formatStdPrice(record.stdPrice, data.formatPrice)}</Table.Cell>
 						<Table.Cell>
-							{#if record.isActive}
-								<span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
-							{:else}
-								<span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">Inactive</span>
-							{/if}
+							<div class="w-48">
+								<Input
+									value={changes[record.itemCode]?.itemDesc ?? record.itemDesc}
+									oninput={(e) => updateInlineChange(record.itemCode, "itemDesc", (e.target as HTMLInputElement).value)}
+									class="h-8 text-xs"
+								/>
+							</div>
 						</Table.Cell>
-						<Table.Cell class="text-muted-foreground whitespace-pre-wrap max-w-[200px]">{record.itemRemark ?? "—"}</Table.Cell>
+						<Table.Cell>
+							<div class="w-32">
+								<Input
+									value={changes[record.itemCode]?.itemSpec ?? record.itemSpec ?? ""}
+									oninput={(e) => updateInlineChange(record.itemCode, "itemSpec", (e.target as HTMLInputElement).value)}
+									placeholder="—"
+									class="h-8 text-xs"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-24">
+								<Input
+									value={changes[record.itemCode]?.itemUnit ?? record.itemUnit ?? ""}
+									oninput={(e) => updateInlineChange(record.itemCode, "itemUnit", (e.target as HTMLInputElement).value)}
+									placeholder="—"
+									class="h-8 text-xs"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-28">
+								<Input
+									type="text"
+									inputmode="decimal"
+									value={stdPriceDisplays[record.itemCode] ?? formatStdPrice(changes[record.itemCode]?.stdPrice ?? record.stdPrice, data.formatPrice)}
+									oninput={(e) => {
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										stdPriceDisplays[record.itemCode] = raw;
+										updateInlineChange(record.itemCode, "stdPrice", raw === "" ? null : raw);
+									}}
+									onblur={() => {
+										const val = changes[record.itemCode]?.stdPrice ?? record.stdPrice;
+										stdPriceDisplays[record.itemCode] = formatStdPrice(val, data.formatPrice);
+									}}
+									class="h-8 text-right text-xs"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<Switch
+								checked={changes[record.itemCode]?.isActive ?? record.isActive}
+								onCheckedChange={(checked) => updateInlineChange(record.itemCode, "isActive", checked)}
+							/>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-48">
+								<Input
+									value={changes[record.itemCode]?.itemRemark ?? record.itemRemark ?? ""}
+									oninput={(e) => updateInlineChange(record.itemCode, "itemRemark", (e.target as HTMLInputElement).value)}
+									placeholder="—"
+									class="h-8 text-xs"
+								/>
+							</div>
+						</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">
 							<div class="flex items-center gap-1">
 								<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit(record)}>
 									<ScrollTextIcon class="size-4" />
-								</Button>
-								<Button variant="ghost" size="icon" class="size-8" onclick={() => openEdit(record)}>
-									<PencilIcon class="size-4" />
 								</Button>
 								<Button
 									variant="ghost"
@@ -381,7 +446,6 @@ import { Label } from "$lib/components/ui/label/index.js";
 </div>
 
 <MasterItemFormDialog bind:open={createOpen} mode="create" formatPrice={data.formatPrice} />
-<MasterItemFormDialog bind:open={editOpen} mode="edit" data={editData} formatPrice={data.formatPrice} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
 
 <Dialog.Root bind:open={auditOpen}>
