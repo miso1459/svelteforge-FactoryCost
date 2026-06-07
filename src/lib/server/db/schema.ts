@@ -223,3 +223,24 @@ export type NewTemplate03 = typeof template03.$inferInsert;
 
 export type Menu = typeof menus.$inferSelect;
 export type NewMenu = typeof menus.$inferInsert;
+
+export const masterBOM = sqliteTable("Master_BOM", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	BOM_item_parent: text("BOM_item_parent"),         // 부모 품목코드 (ITEM_ACCT IN ('10','20')), null = 최상위
+	BOM_item_parent_qty: real("BOM_item_parent_qty").notNull().default(1), // 부모 기준 수량 (1 기준)
+	BOM_item: text("BOM_item").notNull(),              // 자식 품목코드 (ITEM_ACCT != '50')
+	BOM_item_qty: real("BOM_item_qty").notNull().default(1),               // 자식 소요 수량
+	BOM_remark: text("BOM_remark"),
+	sortOrder: integer("sort_order").notNull().default(0),                 // 드래그드롭 순서
+	createdBy: text("created_by").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+});
+
+export type MasterBOM = typeof masterBOM.$inferSelect;
+export type NewMasterBOM = typeof masterBOM.$inferInsert;
