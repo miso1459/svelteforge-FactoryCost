@@ -235,8 +235,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">Item Info</h1>
-			<p class="text-muted-foreground">Manage master item records.</p>
+			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Item Info"}</h1>
+			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "Manage master item records."}</p>
 		</div>
 		<Button onclick={() => (createOpen = true)}>
 			<PlusIcon class="mr-2 size-4" />

@@ -1,5 +1,5 @@
 import { db } from "$lib/server/db/index.js";
-import { masterItem, appSettings } from "$lib/server/db/schema.js";
+import { masterItem, appSettings, menus } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq, inArray } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
@@ -16,7 +16,7 @@ function roundByFormat(value: number | null | undefined, format: string): number
 	return Number(value.toFixed(dp));
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(302, "/login");
 
 	const allRecords = await db
@@ -30,7 +30,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	});
 	const formatPrice = formatSetting?.value ?? "#,##0.00";
 
-	return { records: allRecords, currentUserName: locals.user.name, formatPrice };
+	// Load current menu info from menus table for page header
+	const currentMenu = await db.query.menus.findFirst({
+		where: eq(menus.path, url.pathname),
+	});
+
+	return { records: allRecords, currentUserName: locals.user.name, formatPrice, currentMenu };
 };
 
 export const actions: Actions = {
