@@ -41,9 +41,44 @@
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let deleteOpen = $state(false);
-	let pageSize = $state(15);
+	let pageSize = $state(10);
 	let currentPage = $state(1);
 	let selectedIds = $state(new Set<number>());
+
+	// ── Qty Formatting ─────────────────────────────────────────────────────
+	function parseFormatPattern(format: string): { decimalPlaces: number; useGrouping: boolean } {
+		const parts = format.split(".");
+		const fracPart = parts[1] || "";
+		const intPart = parts[0] || "";
+		const decimalPlaces = [...fracPart].filter((c) => c === "0" || c === "#").length;
+		const useGrouping = intPart.includes(",");
+		return { decimalPlaces, useGrouping };
+	}
+
+	function formatQty(value: number, format: string): string {
+		const { decimalPlaces, useGrouping } = parseFormatPattern(format);
+		try {
+			return new Intl.NumberFormat("en-US", {
+				minimumFractionDigits: decimalPlaces,
+				maximumFractionDigits: decimalPlaces,
+				useGrouping,
+			}).format(value);
+		} catch {
+			return value.toFixed(decimalPlaces);
+		}
+	}
+
+	const qtyStep = $derived.by(() => {
+		const { decimalPlaces } = parseFormatPattern(data.formatQty);
+		if (decimalPlaces === 0) return "1";
+		return "0." + "0".repeat(decimalPlaces - 1) + "1";
+	});
+
+	const qtyMin = $derived.by(() => {
+		const { decimalPlaces } = parseFormatPattern(data.formatQty);
+		if (decimalPlaces === 0) return "1";
+		return "0." + "0".repeat(decimalPlaces - 1) + "1";
+	});
 
 	// ── Edit / Delete state ──────────────────────────────────────────────────
 	let editRecord = $state<BOMFlat | null>(null);
@@ -773,8 +808,8 @@
 							<div class="w-24">
 								<Input
 									type="number"
-									step="0.000001"
-									min="0.000001"
+									step={qtyStep}
+									min={qtyMin}
 									value={parentQtyValue}
 									oninput={(e) => updateInlineChange(fi.item.id, "BOM_parent_qty", (e.target as HTMLInputElement).value)}
 									class="h-8 text-right text-xs"
@@ -787,8 +822,8 @@
 							<div class="w-24">
 								<Input
 									type="number"
-									step="0.000001"
-									min="0.000001"
+									step={qtyStep}
+									min={qtyMin}
 									value={itemQtyValue}
 									oninput={(e) => updateInlineChange(fi.item.id, "BOM_item_qty", (e.target as HTMLInputElement).value)}
 									class="h-8 text-right text-xs"
@@ -935,8 +970,8 @@
 						id="create-parent-qty"
 						name="BOM_item_parent_qty"
 						type="number"
-						step="0.000001"
-						min="0.000001"
+						step={qtyStep}
+						min={qtyMin}
 						bind:value={formParentQty}
 						required
 					/>
@@ -960,8 +995,8 @@
 						id="create-child-qty"
 						name="BOM_item_qty"
 						type="number"
-						step="0.000001"
-						min="0.000001"
+						step={qtyStep}
+						min={qtyMin}
 						bind:value={formItemQty}
 						required
 					/>

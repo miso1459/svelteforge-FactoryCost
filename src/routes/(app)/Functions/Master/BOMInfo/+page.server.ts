@@ -1,5 +1,5 @@
 import { db } from "$lib/server/db/index.js";
-import { masterBOM, masterItem, menus } from "$lib/server/db/schema.js";
+import { masterBOM, masterItem, menus, appSettings } from "$lib/server/db/schema.js";
 import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq, inArray, count } from "drizzle-orm";
@@ -7,6 +7,18 @@ import type { Actions, PageServerLoad } from "./$types.js";
 
 type BOMFlat = typeof masterBOM.$inferSelect;
 type BOMTreeNode = BOMFlat & { children: BOMTreeNode[] };
+
+function parseFormatDecimalPlaces(format: string): number {
+	const parts = format.split(".");
+	const fracPart = parts[1] || "";
+	return [...fracPart].filter((c) => c === "0" || c === "#").length;
+}
+
+function roundByFormat(value: number | null | undefined, format: string): number | null {
+	if (value == null || isNaN(value)) return null;
+	const dp = parseFormatDecimalPlaces(format);
+	return Number(value.toFixed(dp));
+}
 
 function buildTree(flat: BOMFlat[]): BOMTreeNode[] {
 	const map = new Map<number, BOMTreeNode>();
@@ -150,7 +162,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const pageTitle = pageMenuInfo[0]?.name ?? "BOMs";
 	const pageDesc = pageMenuInfo[0]?.desc ?? "Manage Bill of Materials (BOM) structure and item hierarchy.";
 
-	return { flatBOM, bomTree, itemInfo, itemsMap, pageTitle, pageDesc, currentUserName: locals.user.name };
+	// Load formatQty from app settings
+	const formatQtySetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatQty"),
+	});
+	const formatQty = formatQtySetting?.value ?? "#,##0.00";
+
+	return { flatBOM, bomTree, itemInfo, itemsMap, pageTitle, pageDesc, formatQty, currentUserName: locals.user.name };
 };
 
 export const actions: Actions = {
@@ -184,6 +202,12 @@ export const actions: Actions = {
 			return fail(400, { message: validation.message });
 		}
 
+		// Load formatQty for rounding
+		const fmtQtySetting = await db.query.appSettings.findFirst({
+			where: eq(appSettings.key, "formatQty"),
+		});
+		const fmtQty = fmtQtySetting?.value ?? "#,##0.00";
+
 		const userName = locals.user.name;
 		const now = new Date();
 
@@ -200,9 +224,9 @@ export const actions: Actions = {
 		try {
 			await db.insert(masterBOM).values({
 				BOM_item_parent: BOM_item_parent || null,
-				BOM_item_parent_qty: isNaN(BOM_item_parent_qty) ? 1 : BOM_item_parent_qty,
+				BOM_item_parent_qty: roundByFormat(isNaN(BOM_item_parent_qty) ? 1 : BOM_item_parent_qty, fmtQty) ?? 1,
 				BOM_item: BOM_item.trim(),
-				BOM_item_qty: isNaN(BOM_item_qty) ? 1 : BOM_item_qty,
+				BOM_item_qty: roundByFormat(isNaN(BOM_item_qty) ? 1 : BOM_item_qty, fmtQty) ?? 1,
 				BOM_remark: BOM_remark?.trim() || null,
 				sortOrder,
 				createdBy: userName,
@@ -252,14 +276,20 @@ export const actions: Actions = {
 			return fail(400, { message: validation.message });
 		}
 
+		// Load formatQty for rounding
+		const fmtQtySetting = await db.query.appSettings.findFirst({
+			where: eq(appSettings.key, "formatQty"),
+		});
+		const fmtQty = fmtQtySetting?.value ?? "#,##0.00";
+
 		try {
 			await db
 				.update(masterBOM)
 				.set({
 					BOM_item_parent: BOM_item_parent || null,
-					BOM_item_parent_qty,
+					BOM_item_parent_qty: roundByFormat(BOM_item_parent_qty, fmtQty) ?? 1,
 					BOM_item: BOM_item.trim(),
-					BOM_item_qty,
+					BOM_item_qty: roundByFormat(BOM_item_qty, fmtQty) ?? 1,
 					BOM_remark: BOM_remark?.trim() || null,
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
@@ -445,13 +475,19 @@ export const actions: Actions = {
 			}
 		}
 
+		// Load formatQty for rounding
+		const fmtQtySetting = await db.query.appSettings.findFirst({
+			where: eq(appSettings.key, "formatQty"),
+		});
+		const fmtQty = fmtQtySetting?.value ?? "#,##0.00";
+
 		for (const c of changes) {
 			await db
 				.update(masterBOM)
 				.set({
 					BOM_item: c.BOM_item,
-					BOM_item_qty: c.BOM_item_qty,
-					BOM_item_parent_qty: c.BOM_item_parent_qty,
+					BOM_item_qty: roundByFormat(c.BOM_item_qty, fmtQty) ?? 1,
+					BOM_item_parent_qty: roundByFormat(c.BOM_item_parent_qty, fmtQty) ?? 1,
 					BOM_remark: c.BOM_remark || null,
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
