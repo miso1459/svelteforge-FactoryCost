@@ -21,6 +21,7 @@
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
 	import SaveIcon from "@lucide/svelte/icons/save";
+	import XIcon from "@lucide/svelte/icons/x";
 	import UndoIcon from "@lucide/svelte/icons/undo-2";
 	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
@@ -710,7 +711,7 @@
 					)} />
 					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
 						<SaveIcon class="mr-2 size-4" />
-						Save BOM
+						Save
 					</Button>
 				</form>
 			{/if}
@@ -1086,8 +1087,14 @@
 			</div>
 
 			<Dialog.Footer>
-				<Button type="button" variant="outline" onclick={() => { createOpen = false; resetForm(); }}>Cancel</Button>
-				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">Add</Button>
+				<Button type="button" variant="outline" onclick={() => { createOpen = false; resetForm(); }}>
+					<XIcon class="mr-2 size-4" />
+					Cancel
+				</Button>
+				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
+					<PlusIcon class="mr-2 size-4" />
+					Add
+				</Button>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>

@@ -7,6 +7,8 @@
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { ITEM_ACCT, UNIT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import { enhance } from "$app/forms";
+	import XIcon from "@lucide/svelte/icons/x";
+	import PlusIcon from "@lucide/svelte/icons/plus";
 	import { parseFormatPattern, formatStdPrice } from "$lib/utils/format.js";
 
 	type MasterItemData = {
@@ -214,7 +216,14 @@
 				</div>
 			</div>
 			<Dialog.Footer>
-				<Button type="submit">{mode === "create" ? "Create" : "Save Changes"}</Button>
+				<Button type="button" variant="outline" onclick={() => (open = false)}>
+					<XIcon class="mr-2 size-4" />
+					Cancel
+				</Button>
+				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
+					<PlusIcon class="mr-2 size-4" />
+					Add
+				</Button>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>

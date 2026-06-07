@@ -3,6 +3,7 @@
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
+	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
 	import MasterItemFormDialog from "./master-item-form-dialog.svelte";
 	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
@@ -16,6 +17,8 @@
 import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
 import { Switch } from "$lib/components/ui/switch/index.js";
 import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
+import UndoIcon from "@lucide/svelte/icons/undo-2";
+import SaveIcon from "@lucide/svelte/icons/save";
 import * as Dialog from "$lib/components/ui/dialog/index.js";
 import { Label } from "$lib/components/ui/label/index.js";
 	import { toast } from "svelte-sonner";
@@ -253,10 +256,25 @@ import { Label } from "$lib/components/ui/label/index.js";
 			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Item Info"}</h1>
 			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "Manage master item records."}</p>
 		</div>
-		<Button onclick={() => (createOpen = true)}>
-			<PlusIcon class="mr-2 size-4" />
-			Add Record
-		</Button>
+		<div class="flex items-center gap-2">
+			{#if hasChanges}
+				<Button variant="outline" size="sm" onclick={revertAllChanges} class="border-amber-500 text-amber-500 hover:bg-amber-500/10">
+					<UndoIcon class="mr-2 size-4" />
+					Cancel
+				</Button>
+				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; stdPriceDisplays = {}; } await update(); }; }}>
+					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ itemCode: id, itemDesc: val.itemDesc, itemSpec: val.itemSpec || null, itemUnit: val.itemUnit || null, stdPrice: val.stdPrice, isActive: val.isActive, itemRemark: val.itemRemark || null })))} />
+					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
+						<SaveIcon class="mr-2 size-4" />
+						Save
+					</Button>
+				</form>
+			{/if}
+			<Button onclick={() => (createOpen = true)}>
+				<PlusIcon class="mr-2 size-4" />
+				Add Item
+			</Button>
+		</div>
 	</div>
 
 	<!-- Toolbar -->
@@ -271,15 +289,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 		<p class="text-muted-foreground text-sm">
 			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
 		</p>
-		{#if hasChanges}
-			<Button variant="outline" size="sm" onclick={revertAllChanges} class="border-amber-500 text-amber-500 hover:bg-amber-500/10">
-				Cancel
-			</Button>
-			<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; stdPriceDisplays = {}; } await update(); }; }}>
-				<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ itemCode: id, itemDesc: val.itemDesc, itemSpec: val.itemSpec || null, itemUnit: val.itemUnit || null, stdPrice: val.stdPrice, isActive: val.isActive, itemRemark: val.itemRemark || null })))} />
-				<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">Save</Button>
-			</form>
-		{/if}
+
 		<div class="ml-auto flex items-center gap-2">
 			{#if selectedIds.size > 0}
 				<form method="POST" action="?/bulkDelete" use:enhance>
@@ -341,7 +351,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 					<Table.Row class={[
 						selectedIds.has(record.itemCode) ? 'bg-muted/50' : '',
 						isModified ? 'bg-amber-500/10 dark:bg-amber-500/20' : '',
-						'[&>td]:align-top [&>td]:pt-2 [&>td]:pb-0'
+						'[&>td]:align-top [&>td]:pb-0'
 					].filter(Boolean).join(' ')}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<input
@@ -351,14 +361,18 @@ import { Label } from "$lib/components/ui/label/index.js";
 								class="accent-primary size-4"
 							/>
 						</Table.Cell>
-						<Table.Cell>{itemAcctLabel(record.itemAcct)}</Table.Cell>
-						<Table.Cell class="font-medium font-mono">{record.itemCode}</Table.Cell>
+						<Table.Cell>
+							<div class="border-purple-400 border rounded px-2 py-1 text-xs bg-muted/30 dark:bg-zinc-800">{itemAcctLabel(record.itemAcct)}</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="border-blue-400 border rounded px-2 py-1 text-xs font-mono font-medium bg-muted/30 dark:bg-zinc-800">{record.itemCode}</div>
+						</Table.Cell>
 						<Table.Cell>
 							<div class="w-48">
 								<Input
 									value={changes[record.itemCode]?.itemDesc ?? record.itemDesc}
 									oninput={(e) => updateInlineChange(record.itemCode, "itemDesc", (e.target as HTMLInputElement).value)}
-									class="h-8 text-xs"
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
 								/>
 							</div>
 						</Table.Cell>
@@ -368,7 +382,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 									value={changes[record.itemCode]?.itemSpec ?? record.itemSpec ?? ""}
 									oninput={(e) => updateInlineChange(record.itemCode, "itemSpec", (e.target as HTMLInputElement).value)}
 									placeholder="—"
-									class="h-8 text-xs"
+									class="h-8 text-xs border-muted-foreground/20 focus-visible:ring-muted-foreground/40"
 								/>
 							</div>
 						</Table.Cell>
@@ -378,7 +392,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 									value={changes[record.itemCode]?.itemUnit ?? record.itemUnit ?? ""}
 									oninput={(e) => updateInlineChange(record.itemCode, "itemUnit", (e.target as HTMLInputElement).value)}
 									placeholder="—"
-									class="h-8 text-xs"
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
 								/>
 							</div>
 						</Table.Cell>
@@ -397,7 +411,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 										const val = changes[record.itemCode]?.stdPrice ?? record.stdPrice;
 										stdPriceDisplays[record.itemCode] = formatStdPrice(val, data.formatPrice);
 									}}
-									class="h-8 text-right text-xs"
+									class="h-8 text-right text-xs border-muted-foreground/20 focus-visible:ring-muted-foreground/40"
 								/>
 							</div>
 						</Table.Cell>
@@ -409,11 +423,12 @@ import { Label } from "$lib/components/ui/label/index.js";
 						</Table.Cell>
 						<Table.Cell>
 							<div class="w-48">
-								<Input
+								<Textarea
 									value={changes[record.itemCode]?.itemRemark ?? record.itemRemark ?? ""}
-									oninput={(e) => updateInlineChange(record.itemCode, "itemRemark", (e.target as HTMLInputElement).value)}
+									oninput={(e) => updateInlineChange(record.itemCode, "itemRemark", (e.target as HTMLTextAreaElement).value)}
 									placeholder="—"
-									class="h-8 text-xs"
+									class="text-xs min-h-[2rem] border-muted-foreground/20 focus-visible:ring-muted-foreground/40"
+									rows={1}
 								/>
 							</div>
 						</Table.Cell>
