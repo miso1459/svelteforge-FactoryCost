@@ -7,6 +7,7 @@
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { ITEM_ACCT, UNIT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import { enhance } from "$app/forms";
+	import { parseFormatPattern, formatStdPrice } from "$lib/utils/format.js";
 
 	type MasterItemData = {
 		itemCode: string;
@@ -49,29 +50,6 @@
 		readonlyPurple:
 			"border-purple-400 border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
 	};
-
-	function parseFormatPattern(format: string): { decimalPlaces: number; useGrouping: boolean } {
-		const parts = format.split(".");
-		const fracPart = parts[1] || "";
-		const intPart = parts[0] || "";
-		const decimalPlaces = [...fracPart].filter((c) => c === "0" || c === "#").length;
-		const useGrouping = intPart.includes(",");
-		return { decimalPlaces, useGrouping };
-	}
-
-	function formatStdPrice(value: number | null, format: string): string {
-		if (value === null || value === undefined) return "—";
-		const { decimalPlaces, useGrouping } = parseFormatPattern(format);
-		try {
-			return new Intl.NumberFormat("en-US", {
-				minimumFractionDigits: decimalPlaces,
-				maximumFractionDigits: decimalPlaces,
-				useGrouping,
-			}).format(value);
-		} catch {
-			return value.toFixed(decimalPlaces);
-		}
-	}
 
 	let isActive = $state(true);
 	let itemAcct = $state("");

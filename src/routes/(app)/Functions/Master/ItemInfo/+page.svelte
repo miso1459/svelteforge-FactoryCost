@@ -23,35 +23,12 @@ import { Label } from "$lib/components/ui/label/index.js";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
 	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
-
-	function parseFormatPattern(format: string): { decimalPlaces: number; useGrouping: boolean } {
-		const parts = format.split(".");
-		const fracPart = parts[1] || "";
-		const intPart = parts[0] || "";
-		const decimalPlaces = [...fracPart].filter((c) => c === "0" || c === "#").length;
-		const useGrouping = intPart.includes(",");
-		return { decimalPlaces, useGrouping };
-	}
-
-	function formatStdPrice(value: number | null, format: string): string {
-		if (value === null || value === undefined) return "—";
-		const { decimalPlaces, useGrouping } = parseFormatPattern(format);
-		try {
-			return new Intl.NumberFormat("en-US", {
-				minimumFractionDigits: decimalPlaces,
-				maximumFractionDigits: decimalPlaces,
-				useGrouping,
-			}).format(value);
-		} catch {
-			return value.toFixed(decimalPlaces);
-		}
-	}
+	import { parseFormatPattern, formatStdPrice } from "$lib/utils/format.js";
 
 	let { data, form } = $props();
 
 	let search = $state("");
 	let createOpen = $state(false);
-	let editOpen = $state(false);
 	let deleteOpen = $state(false);
 	let sortKey = $state<string>("itemCode");
 	let sortDir = $state<"asc" | "desc">("asc");
@@ -59,16 +36,65 @@ import { Label } from "$lib/components/ui/label/index.js";
 	let currentPage = $state(1);
 	let selectedIds = $state(new Set<string>());
 
-	let editData = $state<{
-		itemCode: string;
+	// ── Inline Edit State ────────────────────────────────────────────────────
+	let changes = $state<Record<string, {
 		itemDesc: string;
-		itemSpec: string | null;
-		itemUnit: string | null;
+		itemSpec: string;
+		itemUnit: string;
 		stdPrice: number | null;
 		isActive: boolean;
-		itemRemark: string | null;
-		itemAcct: string;
-	} | null>(null);
+		itemRemark: string;
+	}>>({});
+
+	const hasChanges = $derived(Object.keys(changes).length > 0);
+
+	let stdPriceDisplays = $state<Record<string, string>>({});
+
+	function updateInlineChange(id: string, field: string, value: any) {
+		const original = data.records.find((r) => r.itemCode === id);
+		if (!original) return;
+
+		if (!changes[id]) {
+			changes[id] = {
+				itemDesc: original.itemDesc,
+				itemSpec: original.itemSpec ?? "",
+				itemUnit: original.itemUnit ?? "",
+				stdPrice: original.stdPrice,
+				isActive: original.isActive,
+				itemRemark: original.itemRemark ?? "",
+			};
+		}
+
+		if (field === "itemDesc") changes[id].itemDesc = value;
+		if (field === "itemSpec") changes[id].itemSpec = value;
+		if (field === "itemUnit") changes[id].itemUnit = value;
+		if (field === "stdPrice") changes[id].stdPrice = value === "" || value === null ? null : parseFloat(value) || 0;
+		if (field === "isActive") changes[id].isActive = value;
+		if (field === "itemRemark") changes[id].itemRemark = value;
+
+		// 원본과 동일하게 돌아왔는지 비교해서 제거
+		const c = changes[id];
+		const isSame =
+			c.itemDesc === original.itemDesc &&
+			c.itemSpec === (original.itemSpec ?? "") &&
+			c.itemUnit === (original.itemUnit ?? "") &&
+			c.stdPrice === original.stdPrice &&
+			c.isActive === original.isActive &&
+			c.itemRemark === (original.itemRemark ?? "");
+
+		if (isSame) {
+			const next = { ...changes };
+			delete next[id];
+			changes = next;
+		}
+	}
+
+	function revertAllChanges() {
+		changes = {};
+		stdPriceDisplays = {};
+		toast.success("All changes reverted.");
+	}
+
 	let deleteId = $state("");
 	let auditOpen = $state(false);
 	let auditRecord = $state<{
@@ -161,20 +187,6 @@ import { Label } from "$lib/components/ui/label/index.js";
 		if (!date) return "—";
 		const d = new Date(date);
 		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-	}
-
-	function openEdit(record: (typeof data.records)[0]) {
-		editData = {
-			itemCode: record.itemCode,
-			itemDesc: record.itemDesc,
-			itemSpec: record.itemSpec,
-			itemUnit: record.itemUnit,
-			stdPrice: record.stdPrice,
-			isActive: record.isActive,
-			itemRemark: record.itemRemark,
-			itemAcct: record.itemAcct,
-		};
-		editOpen = true;
 	}
 
 	function openDelete(itemCode: string) {
