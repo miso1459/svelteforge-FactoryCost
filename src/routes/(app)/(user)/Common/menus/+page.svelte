@@ -63,6 +63,7 @@
 	let formType = $state<"folder" | "link">("link");
 	let formName = $state("");
 	let formPath = $state("");
+	let formDesc = $state("");
 	let formIcon = $state("");
 	let formRole = $state<string[]>(["guest"]);
 	let formSortOrder = $state(0);
@@ -254,6 +255,7 @@
 		formType = "link";
 		formName = "";
 		formPath = "";
+		formDesc = "";
 		formIcon = "";
 		formRole = ["guest"];
 		formSortOrder = 0;
@@ -272,6 +274,7 @@
 		formType = item.type as "folder" | "link";
 		formName = item.name;
 		formPath = item.path ?? "";
+		formDesc = item.desc ?? "";
 		formIcon = item.icon ?? "";
 		formRole = parseRoles(item.role);
 		formSortOrder = item.sortOrder;
@@ -319,6 +322,7 @@
 	function handleExport(format: "csv" | "json") {
 		const exportData = filteredTree.map((fi) => ({
 			name: fi.item.name,
+			desc: fi.item.desc ?? "",
 			type: fi.item.type,
 			path: fi.item.path ?? "",
 			icon: fi.item.icon ?? "",
@@ -520,7 +524,7 @@
 		return "h-0";
 	}
 
-	const columns = ["Name", "Type", "Roles", "Path", "Status"];
+	const columns = ["Name", "Desc", "Type", "Roles", "Path", "Status"];
 </script>
 
 <svelte:head>
@@ -603,7 +607,7 @@
 					<!-- before indicator -->
 					{#if dropOverId === fi.item.id && dropPosition === "before"}
 						<Table.Row>
-							<Table.Cell colspan={7} class="h-0.5 p-0">
+							<Table.Cell colspan={8} class="h-0.5 p-0">
 								<div class="bg-primary h-full w-full rounded-full"></div>
 							</Table.Cell>
 						</Table.Row>
@@ -650,6 +654,9 @@
 								{/if}
 								<span class="font-medium">{fi.item.name}</span>
 							</div>
+						</Table.Cell>
+						<Table.Cell class="text-muted-foreground max-w-[200px] truncate" title={fi.item.desc ?? ""}>
+							{fi.item.desc ?? "—"}
 						</Table.Cell>
 						<Table.Cell>
 							<Badge variant={typeBadgeVariant(fi.item.type)} class="rounded-md">
@@ -700,14 +707,14 @@
 					<!-- after indicator -->
 					{#if dropOverId === fi.item.id && dropPosition === "after"}
 						<Table.Row>
-							<Table.Cell colspan={7} class="h-0.5 p-0">
+							<Table.Cell colspan={8} class="h-0.5 p-0">
 								<div class="bg-primary h-full w-full rounded-full"></div>
 							</Table.Cell>
 						</Table.Row>
 					{/if}
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={7} class="h-24 text-center">
+						<Table.Cell colspan={8} class="h-24 text-center">
 							{search ? "No menus match your search." : "No menus found."}
 						</Table.Cell>
 					</Table.Row>
@@ -814,6 +821,12 @@
 				<div class="grid gap-2">
 					<Label for="create-name" class="text-amber-600 dark:text-amber-400">Name *</Label>
 					<Input id="create-name" name="name" bind:value={formName} required />
+				</div>
+
+				<!-- Desc -->
+				<div class="grid gap-2">
+					<Label for="create-desc">Description</Label>
+					<Input id="create-desc" name="desc" bind:value={formDesc} placeholder="Brief description..." />
 				</div>
 
 				<!-- Path (only for link) -->
@@ -929,6 +942,12 @@
 				<div class="grid gap-2">
 					<Label for="edit-name" class="text-amber-600 dark:text-amber-400">Name *</Label>
 					<Input id="edit-name" name="name" bind:value={formName} required />
+				</div>
+
+				<!-- Desc -->
+				<div class="grid gap-2">
+					<Label for="edit-desc">Description</Label>
+					<Input id="edit-desc" name="desc" bind:value={formDesc} placeholder="Brief description..." />
 				</div>
 
 				<!-- Path (only for link) -->

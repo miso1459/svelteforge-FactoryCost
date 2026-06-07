@@ -53,6 +53,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const type = formData.get("type") as string | null;
 		const name = formData.get("name") as string | null;
+		const desc = formData.get("desc") as string | null;
 		const path = formData.get("path") as string | null;
 		const icon = formData.get("icon") as string | null;
 		const sortOrder = parseInt(formData.get("sortOrder") as string) || 0;
@@ -76,6 +77,7 @@ export const actions: Actions = {
 				id: generateId(10),
 				type,
 				name,
+				desc: desc || null,
 				path: path || null,
 				icon: icon || null,
 				role,
@@ -101,6 +103,7 @@ export const actions: Actions = {
 		const id = formData.get("id") as string | null;
 		const type = formData.get("type") as string | null;
 		const name = formData.get("name") as string | null;
+		const desc = formData.get("desc") as string | null;
 		const path = formData.get("path") as string | null;
 		const icon = formData.get("icon") as string | null;
 		const sortOrder = parseInt(formData.get("sortOrder") as string) || 0;
@@ -123,6 +126,7 @@ export const actions: Actions = {
 				.set({
 					type: type as "folder" | "link",
 					name,
+					desc: desc || null,
 					path: path || null,
 					icon: icon || null,
 					role,

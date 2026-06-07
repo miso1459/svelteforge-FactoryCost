@@ -142,6 +142,7 @@ export const menus = sqliteTable("menus", {
 	id: text("id").primaryKey(),
 	type: text("type", { enum: ["folder", "link"] }).notNull(),
 	name: text("name").notNull(),
+	desc: text("desc"),
 	path: text("path"),
 	icon: text("icon"),
 	role: text("role").notNull().default("[]"),

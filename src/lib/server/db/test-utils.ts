@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS menus (
 	id text PRIMARY KEY NOT NULL,
 	type text NOT NULL,
 	name text NOT NULL,
+	desc text,
 	path text,
 	icon text,
 	role text DEFAULT '[]' NOT NULL,
