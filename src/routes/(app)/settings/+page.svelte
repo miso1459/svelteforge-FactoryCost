@@ -314,6 +314,22 @@
 								</p>
 							</div>
 
+							<div class="grid gap-2">
+								<Label for="formatAmount">Number Format (Amount)</Label>
+								<Input id="formatAmount" name="formatAmount" value={data.settings.formatAmount} />
+								<p class="text-muted-foreground text-xs">
+									Number format pattern, e.g. #,##0, #,##0.00
+								</p>
+							</div>
+
+							<div class="grid gap-2">
+								<Label for="formatQty">Number Format (Quantity)</Label>
+								<Input id="formatQty" name="formatQty" value={data.settings.formatQty} />
+								<p class="text-muted-foreground text-xs">
+									Number format pattern, e.g. #,##0.00, #,##0.000
+								</p>
+							</div>
+
 							<div class="flex items-center justify-between rounded-lg border p-4">
 								<div class="space-y-0.5">
 									<Label>Maintenance Mode</Label>
