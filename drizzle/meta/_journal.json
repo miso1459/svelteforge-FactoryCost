@@ -22,6 +22,13 @@
       "when": 1780740820733,
       "tag": "0002_conscious_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1780790533559,
+      "tag": "0003_thick_human_torch",
+      "breakpoints": true
     }
   ]
 }
