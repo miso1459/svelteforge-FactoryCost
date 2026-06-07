@@ -9,6 +9,7 @@
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
 	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
+import BOMCreateDialog from "./bom-create-dialog.svelte";
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import TrashIcon from "@lucide/svelte/icons/trash-2";
@@ -42,6 +43,7 @@
 	// ── Search / Pagination ───────────────────────────────────────────────────
 	let search = $state("");
 	let createOpen = $state(false);
+	let bomDialogParentId = $state<string | undefined>(undefined);
 	let editOpen = $state(false);
 	let deleteOpen = $state(false);
 	let pageSize = $state(10);
@@ -102,43 +104,7 @@
 		updatedAt: Date | null;
 	} | null>(null);
 
-	// ── Form dialog state ────────────────────────────────────────────────────
-	let formParentId = $state("");
-	let formParentQty = $state(1);
-	let formItem = $state("");
-	let formItemQty = $state(1);
-	let formRemark = $state("");
 
-	// ── Qty Display formatting (Create dialog) ──────────────────────────────
-	let formParentQtyDisplay = $state("");
-	let formItemQtyDisplay = $state("");
-
-	function initQtyDisplay() {
-		formParentQty = 1;
-		formItemQty = 1;
-		formParentQtyDisplay = formatQty(1, data.formatQty);
-		formItemQtyDisplay = formatQty(1, data.formatQty);
-	}
-
-	function onParentQtyInput(e: Event) {
-		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
-		formParentQty = raw ? Number(raw) : 1;
-		formParentQtyDisplay = raw;
-	}
-
-	function onParentQtyBlur() {
-		formParentQtyDisplay = formatQty(formParentQty, data.formatQty);
-	}
-
-	function onItemQtyInput(e: Event) {
-		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
-		formItemQty = raw ? Number(raw) : 1;
-		formItemQtyDisplay = raw;
-	}
-
-	function onItemQtyBlur() {
-		formItemQtyDisplay = formatQty(formItemQty, data.formatQty);
-	}
 
 	// ── Inline Edit State ────────────────────────────────────────────────────
 	// 각 id 마다 변경된 사항을 저장할 상태 맵
@@ -331,7 +297,7 @@
 		if (form?.message) {
 			toast.error(form.message);
 			if (form?.field) {
-				focusField(form.field as string, form?.id as number | undefined);
+				focusField(form.field as string, (form as { id?: number }).id as number | undefined);
 			}
 		}
 		if (form?.success) {
@@ -376,18 +342,8 @@
 	);
 
 	// ── Dialog / Reset ───────────────────────────────────────────────────────
-	function resetForm() {
-		formParentId = "";
-		formItem = "";
-		formRemark = "";
-		initQtyDisplay();
-	}
-
 	function openCreate(presetParentId?: string) {
-		resetForm();
-		if (presetParentId) {
-			formParentId = presetParentId;
-		}
+		bomDialogParentId = presetParentId;
 		createOpen = true;
 	}
 
@@ -1042,112 +998,4 @@
 <!-- ═══════════════════════════════════════════════════════════════════════════
      Create Dialog
      ═══════════════════════════════════════════════════════════════════════════ -->
-<Dialog.Root bind:open={createOpen}>
-	<Dialog.Content class="sm:max-w-[500px]">
-		<Dialog.Header>
-			<Dialog.Title>Add BOM Item</Dialog.Title>
-			<Dialog.Description>Register a new child item in the BOM hierarchy.</Dialog.Description>
-		</Dialog.Header>
-		<form
-			method="POST"
-			action="?/create"
-			use:enhance={() => {
-				return async ({ result, update }) => {
-					if (result.type === "success" || result.type === "redirect") {
-						createOpen = false;
-						resetForm();
-					} else if (result.type === "failure") {
-						const data = result.data as Record<string, unknown>;
-						if (data?.message) toast.error(data.message as string);
-						if (data?.field) {
-							focusField(data.field as string);
-						}
-						return; // handled — skip update() to prevent duplicate $effect
-					}
-					await update();
-				};
-			}}
-		>
-			<div class="grid gap-4 py-4">
-				<!-- Parent Item -->
-				<div id="BOM_item_parent" class="grid gap-2">
-					<Label for="create-parent" class="text-muted-foreground">Parent Item (Optional)</Label>
-					<SearchableSelect
-						items={parentItemOptions}
-						bind:value={formParentId}
-						placeholder="Root level (no parent)"
-						class={inputClasses.optional}
-					/>
-					<input type="hidden" name="BOM_item_parent" value={formParentId ?? ""} />
-				</div>
-
-				<!-- Parent Qty -->
-				<div id="BOM_item_parent_qty" class="grid gap-2">
-					<Label for="create-parent-qty" class="text-amber-600 dark:text-amber-400">Parent Qty *</Label>
-					<input type="hidden" name="BOM_item_parent_qty" value={formParentQty} />
-					<Input
-						id="create-parent-qty"
-						type="text"
-						inputmode="decimal"
-						value={formParentQtyDisplay}
-						oninput={onParentQtyInput}
-						onblur={onParentQtyBlur}
-						required
-						class={inputClasses.required}
-					/>
-				</div>
-
-				<!-- Child Item -->
-				<div id="BOM_item" class="grid gap-2">
-					<Label for="create-child" class="text-amber-600 dark:text-amber-400">Child Item *</Label>
-					<SearchableSelect
-						items={childItemOptions}
-						bind:value={formItem}
-						placeholder="Select child item..."
-						class={inputClasses.required}
-					/>
-					<input type="hidden" name="BOM_item" value={formItem} />
-				</div>
-
-				<!-- Child Qty -->
-				<div id="BOM_item_qty" class="grid gap-2">
-					<Label for="create-child-qty" class="text-amber-600 dark:text-amber-400">Child Qty *</Label>
-					<input type="hidden" name="BOM_item_qty" value={formItemQty} />
-					<Input
-						id="create-child-qty"
-						type="text"
-						inputmode="decimal"
-						value={formItemQtyDisplay}
-						oninput={onItemQtyInput}
-						onblur={onItemQtyBlur}
-						required
-						class={inputClasses.required}
-					/>
-				</div>
-
-				<!-- Remark -->
-				<div class="grid gap-2">
-					<Label for="create-remark" class="text-muted-foreground">Remark</Label>
-					<Textarea
-						id="create-remark"
-						name="BOM_remark"
-						bind:value={formRemark}
-						placeholder="Enter remark..."
-						class={inputClasses.optional}
-					/>
-				</div>
-			</div>
-
-			<Dialog.Footer>
-				<Button type="button" variant="outline" onclick={() => { createOpen = false; resetForm(); }}>
-					<XIcon class="mr-2 size-4" />
-					Cancel
-				</Button>
-				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
-					<PlusIcon class="mr-2 size-4" />
-					Add
-				</Button>
-			</Dialog.Footer>
-		</form>
-	</Dialog.Content>
-</Dialog.Root>
+<BOMCreateDialog bind:open={createOpen} {parentItemOptions} {childItemOptions} formatQty={data.formatQty} presetParentId={bomDialogParentId} />
