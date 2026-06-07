@@ -25,7 +25,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
-	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
+	import SearchableSelect from "$lib/components/searchable-select.svelte";
+	import { ITEM_ACCT, UNIT } from "$lib/(user)/Common/DropdownLists.js";
 	import { formatStdPrice } from "$lib/utils/format.js";
 
 	let { data, form } = $props();
@@ -114,6 +115,8 @@ import { Label } from "$lib/components/ui/label/index.js";
 		return item ? `${item.value} (${item.code})` : code;
 	}
 
+	const unitItems = $derived(UNIT.list);
+
 	const filtered = $derived(
 		data.records.filter(
 			(r) =>
@@ -146,8 +149,26 @@ import { Label } from "$lib/components/ui/label/index.js";
 		currentPage = 1;
 	});
 
+	function focusField(field: string, itemCode?: string) {
+		if (itemCode) {
+			const el = document.getElementById(`${field}-${itemCode}`);
+			if (el) {
+				const input = el.querySelector("input:not([type=hidden]), textarea, select, button") as HTMLElement | null;
+				(input ?? el).focus();
+				el.style.outline = "2px solid #fbbf24";
+				el.style.outlineOffset = "2px";
+			}
+		}
+	}
+
 	$effect(() => {
-		if (form?.message) toast.error(form.message);
+		if (form?.message) {
+			toast.error(form.message);
+			const formAny = form as Record<string, unknown>;
+			if (formAny.field) {
+				focusField(formAny.field as string, formAny.itemCode as string | undefined);
+			}
+		}
 		if (form?.success) {
 			toast.success("Record saved successfully");
 			selectedIds = new Set();
@@ -262,7 +283,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 					<UndoIcon class="mr-2 size-4" />
 					Cancel
 				</Button>
-				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; stdPriceDisplays = {}; } await update(); }; }}>
+				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; stdPriceDisplays = {}; } else if (result.type === "failure") { const data = result.data as { message?: string; field?: string; itemCode?: string } | undefined; if (data?.message) toast.error(data.message); if (data?.field && data?.itemCode !== undefined) { focusField(data.field, data.itemCode); } } await update(); }; }}>
 					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ itemCode: id, itemDesc: val.itemDesc, itemSpec: val.itemSpec || null, itemUnit: val.itemUnit || null, stdPrice: val.stdPrice, isActive: val.isActive, itemRemark: val.itemRemark || null })))} />
 					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
 						<SaveIcon class="mr-2 size-4" />
@@ -368,7 +389,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 							<div class="border-blue-400 border rounded px-2 py-1 text-xs font-mono font-medium bg-muted/30 dark:bg-zinc-800">{record.itemCode}</div>
 						</Table.Cell>
 						<Table.Cell>
-							<div class="w-48">
+							<div class="w-48" id="itemDesc-{record.itemCode}">
 								<Input
 									value={changes[record.itemCode]?.itemDesc ?? record.itemDesc}
 									oninput={(e) => updateInlineChange(record.itemCode, "itemDesc", (e.target as HTMLInputElement).value)}
@@ -387,11 +408,11 @@ import { Label } from "$lib/components/ui/label/index.js";
 							</div>
 						</Table.Cell>
 						<Table.Cell>
-							<div class="w-24">
-								<Input
-									value={changes[record.itemCode]?.itemUnit ?? record.itemUnit ?? ""}
-									oninput={(e) => updateInlineChange(record.itemCode, "itemUnit", (e.target as HTMLInputElement).value)}
-									placeholder="—"
+							<div class="w-28">
+								<SearchableSelect
+									items={unitItems}
+									bind:value={() => changes[record.itemCode]?.itemUnit ?? record.itemUnit ?? "", (v) => updateInlineChange(record.itemCode, "itemUnit", v)}
+									placeholder="Select unit..."
 									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
 								/>
 							</div>

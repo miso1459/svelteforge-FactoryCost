@@ -1,7 +1,7 @@
 import { db } from "$lib/server/db/index.js";
 import { masterItem, appSettings, menus } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc, like } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 function parseFormatDecimalPlaces(format: string): number {
@@ -43,7 +43,7 @@ export const actions: Actions = {
 		if (!locals.user) redirect(302, "/login");
 
 		const formData = await request.formData();
-		const itemCode = formData.get("itemCode");
+		let itemCode = formData.get("itemCode");
 		const itemDesc = formData.get("itemDesc");
 		const itemSpec = formData.get("itemSpec");
 		const itemUnit = formData.get("itemUnit");
@@ -52,9 +52,6 @@ export const actions: Actions = {
 		const itemRemark = formData.get("itemRemark");
 		const itemAcct = formData.get("itemAcct");
 
-		if (typeof itemCode !== "string" || itemCode.length < 1 || itemCode.length > 100) {
-			return fail(400, { message: "Item Code is required (1-100 characters)" });
-		}
 		if (typeof itemDesc !== "string" || itemDesc.length < 1 || itemDesc.length > 255) {
 			return fail(400, { message: "Item Desc is required (1-255 characters)" });
 		}
@@ -63,6 +60,27 @@ export const actions: Actions = {
 		}
 		if (typeof itemAcct !== "string" || itemAcct.length < 1) {
 			return fail(400, { message: "Item Acct is required" });
+		}
+
+		// Auto-generate itemCode if empty (use ItemAcct as prefix)
+		if (typeof itemCode !== "string" || itemCode.trim().length === 0) {
+			const prefix = itemAcct;
+			const existingCodes = await db
+				.select({ code: masterItem.itemCode })
+				.from(masterItem)
+				.where(like(masterItem.itemCode, prefix + "-%"))
+				.orderBy(desc(masterItem.itemCode));
+
+			let nextSeq = 1;
+			if (existingCodes.length > 0) {
+				const maxCode = existingCodes[0].code;
+				const numPart = maxCode.slice(prefix.length + 1);
+				const parsed = parseInt(numPart, 10);
+				if (!isNaN(parsed)) nextSeq = parsed + 1;
+			}
+			itemCode = `${prefix}-${String(nextSeq).padStart(4, "0")}`;
+		} else if (itemCode.length > 100) {
+			return fail(400, { message: "Item Code must be 1-100 characters" });
 		}
 
 		// Load formatPrice for rounding
@@ -217,8 +235,11 @@ export const actions: Actions = {
 
 		// 필드 검증
 		for (const c of changes) {
-			if (!c.itemCode || !c.itemDesc) {
-				return fail(400, { message: "Item Code and Item Desc are required." });
+			if (!c.itemCode) {
+				return fail(400, { field: "itemCode", itemCode: "", message: "Item Code is required." });
+			}
+			if (!c.itemDesc) {
+				return fail(400, { field: "itemDesc", itemCode: c.itemCode, message: `Item Desc is required for '${c.itemCode}'.` });
 			}
 		}
 
