@@ -80,6 +80,11 @@
 		return "0." + "0".repeat(decimalPlaces - 1) + "1";
 	});
 
+	const inputClasses = {
+		required: "border-amber-400 focus-visible:ring-amber-400",
+		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40",
+	};
+
 	// ── Edit / Delete state ──────────────────────────────────────────────────
 	let editRecord = $state<BOMFlat | null>(null);
 	let deleteId = $state<number | null>(null);
@@ -954,18 +959,19 @@
 			<div class="grid gap-4 py-4">
 				<!-- Parent Item -->
 				<div class="grid gap-2">
-					<Label for="create-parent" class="text-foreground">Parent Item (Optional)</Label>
+					<Label for="create-parent" class="text-muted-foreground">Parent Item (Optional)</Label>
 					<SearchableSelect
 						items={parentItemOptions}
 						bind:value={formParentId}
 						placeholder="Root level (no parent)"
+						class={inputClasses.optional}
 					/>
 					<input type="hidden" name="BOM_item_parent" value={formParentId ?? ""} />
 				</div>
 
 				<!-- Parent Qty -->
 				<div class="grid gap-2">
-					<Label for="create-parent-qty" class="text-foreground">Parent Qty *</Label>
+					<Label for="create-parent-qty" class="text-amber-600 dark:text-amber-400">Parent Qty *</Label>
 					<Input
 						id="create-parent-qty"
 						name="BOM_item_parent_qty"
@@ -974,6 +980,7 @@
 						min={qtyMin}
 						bind:value={formParentQty}
 						required
+						class={inputClasses.required}
 					/>
 				</div>
 
@@ -984,13 +991,14 @@
 						items={childItemOptions}
 						bind:value={formItem}
 						placeholder="Select child item..."
+						class={inputClasses.required}
 					/>
 					<input type="hidden" name="BOM_item" value={formItem} />
 				</div>
 
 				<!-- Child Qty -->
 				<div class="grid gap-2">
-					<Label for="create-child-qty" class="text-foreground">Child Qty *</Label>
+					<Label for="create-child-qty" class="text-amber-600 dark:text-amber-400">Child Qty *</Label>
 					<Input
 						id="create-child-qty"
 						name="BOM_item_qty"
@@ -999,17 +1007,19 @@
 						min={qtyMin}
 						bind:value={formItemQty}
 						required
+						class={inputClasses.required}
 					/>
 				</div>
 
 				<!-- Remark -->
 				<div class="grid gap-2">
-					<Label for="create-remark" class="text-foreground">Remark</Label>
+					<Label for="create-remark" class="text-muted-foreground">Remark</Label>
 					<Input
 						id="create-remark"
 						name="BOM_remark"
 						bind:value={formRemark}
 						placeholder="Enter remark..."
+						class={inputClasses.optional}
 					/>
 				</div>
 			</div>
