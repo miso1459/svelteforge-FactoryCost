@@ -6,6 +6,7 @@
 	import { Switch } from "$lib/components/ui/switch/index.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { ITEM_ACCT, UNIT, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
 	import XIcon from "@lucide/svelte/icons/x";
 	import PlusIcon from "@lucide/svelte/icons/plus";
@@ -31,7 +32,7 @@
 
 	let { open = $bindable(false), mode, data = null, formatPrice = "#,##0.00" }: Props = $props();
 
-	const title = $derived(mode === "create" ? "Add Record" : "Edit Record");
+	const title = $derived(mode === "create" ? "Add Item" : "Edit Item");
 	const action = $derived(mode === "create" ? "?/create" : "?/update");
 
 	// Flat list from ITEM_ACCT group
@@ -58,6 +59,29 @@
 	let itemUnit = $state("");
 	let stdPriceRaw = $state<number | null>(null);
 	let stdPriceDisplay = $state("");
+
+	// ── Focus / Outline ─────────────────────────────────────────────────────
+	let dropFocus = $state("");
+
+	function focusField(field: string) {
+		if (field === "itemAcct" || field === "itemUnit") {
+			dropFocus = field;
+			const wrapper = document.getElementById(`${field}-wrapper`);
+			if (wrapper) {
+				const btn = wrapper.querySelector("button") as HTMLElement | null;
+				btn?.focus();
+			}
+		} else {
+			const el = document.getElementById(field);
+			if (el) {
+				if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+					el.focus();
+				} else {
+					(el.querySelector("input, textarea, button") as HTMLElement | null)?.focus();
+				}
+			}
+		}
+	}
 
 	function onStdPriceInput(e: Event) {
 		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
@@ -93,6 +117,10 @@
 			}
 		}
 	});
+
+	$effect(() => {
+		if (!open) dropFocus = "";
+	});
 </script>
 
 <Dialog.Root bind:open>
@@ -101,8 +129,8 @@
 			<Dialog.Title>{title}</Dialog.Title>
 			<Dialog.Description>
 				{mode === "create"
-					? "Create a new master item record."
-					: "Update master item record details."}
+					? "Create a new master item."
+					: "Update master item details."}
 			</Dialog.Description>
 		</Dialog.Header>
 		<form
@@ -112,6 +140,10 @@
 				return async ({ result, update }) => {
 					if (result.type === "success" || result.type === "redirect") {
 						open = false;
+					} else if (result.type === "failure") {
+						const data = result.data as { message?: string; field?: string } | undefined;
+						if (data?.message) toast.error(data.message);
+						if (data?.field) focusField(data.field);
 					}
 					await update();
 				};
@@ -124,7 +156,10 @@
 				<div class="grid gap-2 relative">
 					<Label for="itemAcct" class="font-semibold text-purple-600 dark:text-purple-400">Item Acct * <span class="text-xs font-normal text-muted-foreground">(cannot be changed after save)</span></Label>
 					<!-- form submit 시 itemAcct가 비어있으면 SearchableSelect 위치에 브라우저 네이티브 "이 입력란을 작성하세요" 메시지 표시 -->
-					<div class="relative">
+					<div
+						id="itemAcct-wrapper"
+						class="relative rounded-md transition-all {dropFocus === 'itemAcct' ? 'ring-2 ring-amber-400' : ''}"
+					>
 						<!-- 다른 input과 동일하게 입력란 가운데 아래에 validation 말풍선이 뜨도록 SearchableSelect 전체 영역을 덮는 투명 input -->
 						<input
 							type="text"
@@ -150,7 +185,8 @@
 						id="itemCode"
 						name="itemCode"
 						value={data?.itemCode ?? ""}
-						required
+						required={isReadonly}
+						placeholder={mode === "create" ? "Auto-generated if empty" : ""}
 						class={isReadonly ? inputClasses.readonly : inputClasses.pk}
 					/>
 				</div>
@@ -164,7 +200,10 @@
 				</div>
 				<div class="grid gap-2 relative">
 					<Label for="itemUnit" class="font-medium text-amber-600 dark:text-amber-400">Item Unit *</Label>
-					<div class="relative">
+					<div
+						id="itemUnit-wrapper"
+						class="relative rounded-md transition-all {dropFocus === 'itemUnit' ? 'ring-2 ring-amber-400' : ''}"
+					>
 						<input
 							type="text"
 							class="absolute inset-0 opacity-0 pointer-events-none cursor-default"

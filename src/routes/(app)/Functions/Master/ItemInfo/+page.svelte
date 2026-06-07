@@ -155,8 +155,6 @@ import { Label } from "$lib/components/ui/label/index.js";
 			if (el) {
 				const input = el.querySelector("input:not([type=hidden]), textarea, select, button") as HTMLElement | null;
 				(input ?? el).focus();
-				el.style.outline = "2px solid #fbbf24";
-				el.style.outlineOffset = "2px";
 			}
 		}
 	}

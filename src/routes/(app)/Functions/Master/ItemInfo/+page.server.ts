@@ -53,13 +53,13 @@ export const actions: Actions = {
 		const itemAcct = formData.get("itemAcct");
 
 		if (typeof itemDesc !== "string" || itemDesc.length < 1 || itemDesc.length > 255) {
-			return fail(400, { message: "Item Desc is required (1-255 characters)" });
+			return fail(400, { field: "itemDesc", message: "Item Desc is required (1-255 characters)" });
 		}
 		if (typeof itemUnit !== "string" || itemUnit.length < 1) {
-			return fail(400, { message: "Item Unit is required" });
+			return fail(400, { field: "itemUnit", message: "Item Unit is required" });
 		}
 		if (typeof itemAcct !== "string" || itemAcct.length < 1) {
-			return fail(400, { message: "Item Acct is required" });
+			return fail(400, { field: "itemAcct", message: "Item Acct is required" });
 		}
 
 		// Auto-generate itemCode if empty (use ItemAcct as prefix)
@@ -128,13 +128,13 @@ export const actions: Actions = {
 		const itemAcct = formData.get("itemAcct");
 
 		if (typeof itemCode !== "string" || itemCode.length < 1) {
-			return fail(400, { message: "Item Code is required" });
+			return fail(400, { field: "itemCode", message: "Item Code is required" });
 		}
 		if (typeof itemDesc !== "string" || itemDesc.length < 1 || itemDesc.length > 255) {
-			return fail(400, { message: "Item Desc is required (1-255 characters)" });
+			return fail(400, { field: "itemDesc", message: "Item Desc is required (1-255 characters)" });
 		}
 		if (typeof itemAcct !== "string" || itemAcct.length < 1) {
-			return fail(400, { message: "Item Acct is required" });
+			return fail(400, { field: "itemAcct", message: "Item Acct is required" });
 		}
 
 		// Load formatPrice for rounding
