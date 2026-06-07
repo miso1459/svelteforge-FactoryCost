@@ -43,11 +43,11 @@
 	const isReadonly = $derived(mode === "edit");
 
 	const inputClasses = {
-		pk: "border-blue-400 focus-visible:ring-blue-400",
-		required: "border-amber-400 focus-visible:ring-amber-400",
-		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40",
+		pk: "border-blue-400 focus-visible:ring-blue-400 focus:ring-2 focus:ring-blue-400",
+		required: "border-amber-400 focus-visible:ring-amber-400 focus:ring-2 focus:ring-amber-400",
+		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40 focus:ring-2 focus:ring-muted-foreground/40",
 		purple:
-			"border-purple-400 focus-visible:ring-purple-400",
+			"border-purple-400 focus-visible:ring-purple-400 focus:ring-2 focus:ring-purple-400",
 		readonly:
 			"border-black dark:border-white border-2 bg-muted/60 dark:bg-zinc-800 pointer-events-none",
 		readonlyPurple:
@@ -61,27 +61,64 @@
 	let stdPriceDisplay = $state("");
 
 	// ── Focus / Outline ─────────────────────────────────────────────────────
-	let dropFocus = $state("");
-
 	function focusField(field: string) {
-		if (field === "itemAcct" || field === "itemUnit") {
-			dropFocus = field;
-			const wrapper = document.getElementById(`${field}-wrapper`);
-			if (wrapper) {
-				const btn = wrapper.querySelector("button") as HTMLElement | null;
-				btn?.focus();
+		if (field === "itemAcct") {
+			// Purple outline to match label + inputClasses.purple
+			const btn = document.querySelector(`#${field} button`) as HTMLElement | null;
+			if (btn) {
+				btn.focus();
+				btn.style.outline = "2px solid #a855f7";
+				btn.style.outlineOffset = "2px";
+			}
+		} else if (field === "itemUnit") {
+			const btn = document.querySelector(`#${field} button`) as HTMLElement | null;
+			if (btn) {
+				btn.focus();
+				btn.style.outline = "2px solid #fbbf24";
+				btn.style.outlineOffset = "2px";
 			}
 		} else {
 			const el = document.getElementById(field);
-			if (el) {
-				if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-					el.focus();
-				} else {
-					(el.querySelector("input, textarea, button") as HTMLElement | null)?.focus();
-				}
-			}
+			if (el) el.focus();
 		}
 	}
+
+	// ── Client-side pre-validation (one field at a time) ────────────────────
+	function handleSubmit(e: SubmitEvent) {
+		if (!itemAcct.trim()) {
+			e.preventDefault();
+			toast.error("Item Acct is required");
+			focusField("itemAcct");
+			return;
+		}
+		const descEl = document.getElementById("itemDesc") as HTMLInputElement | null;
+		if (!descEl?.value?.trim()) {
+			e.preventDefault();
+			toast.error("Item Desc is required (1-255 characters)");
+			focusField("itemDesc");
+			return;
+		}
+		if (!itemUnit.trim()) {
+			e.preventDefault();
+			toast.error("Item Unit is required");
+			focusField("itemUnit");
+			return;
+		}
+	}
+
+	// ── Clear outline when dropdown value changes ──────────────────────────
+	$effect(() => {
+		if (itemAcct) {
+			const btn = document.querySelector("#itemAcct button") as HTMLElement | null;
+			if (btn) btn.style.outline = "";
+		}
+	});
+	$effect(() => {
+		if (itemUnit) {
+			const btn = document.querySelector("#itemUnit button") as HTMLElement | null;
+			if (btn) btn.style.outline = "";
+		}
+	});
 
 	function onStdPriceInput(e: Event) {
 		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
@@ -118,9 +155,6 @@
 		}
 	});
 
-	$effect(() => {
-		if (!open) dropFocus = "";
-	});
 </script>
 
 <Dialog.Root bind:open>
@@ -136,6 +170,7 @@
 		<form
 			method="POST"
 			{action}
+			onsubmit={handleSubmit}
 			use:enhance={() => {
 				return async ({ result, update }) => {
 					if (result.type === "success" || result.type === "redirect") {
@@ -155,20 +190,7 @@
 			<div class="grid gap-4 py-4">
 				<div class="grid gap-2 relative">
 					<Label for="itemAcct" class="font-semibold text-purple-600 dark:text-purple-400">Item Acct * <span class="text-xs font-normal text-muted-foreground">(cannot be changed after save)</span></Label>
-					<!-- form submit 시 itemAcct가 비어있으면 SearchableSelect 위치에 브라우저 네이티브 "이 입력란을 작성하세요" 메시지 표시 -->
-					<div
-						id="itemAcct-wrapper"
-						class="relative rounded-md transition-all {dropFocus === 'itemAcct' ? 'ring-2 ring-amber-400' : ''}"
-					>
-						<!-- 다른 input과 동일하게 입력란 가운데 아래에 validation 말풍선이 뜨도록 SearchableSelect 전체 영역을 덮는 투명 input -->
-						<input
-							type="text"
-							class="absolute inset-0 opacity-0 pointer-events-none cursor-default"
-							required
-							value={itemAcct}
-							tabindex="-1"
-							aria-hidden="true"
-						/>
+					<div id="itemAcct" class="relative rounded-md">
 						<input type="hidden" name="itemAcct" value={itemAcct} />
 						<SearchableSelect
 							items={acctItems}
@@ -192,7 +214,7 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="itemDesc" class="font-medium text-amber-600 dark:text-amber-400">Item Desc *</Label>
-					<Input id="itemDesc" name="itemDesc" value={data?.itemDesc ?? ""} required class={inputClasses.required} />
+					<Input id="itemDesc" name="itemDesc" value={data?.itemDesc ?? ""} class={inputClasses.required} />
 				</div>
 				<div class="grid gap-2">
 					<Label for="itemSpec" class="text-muted-foreground">Item Spec</Label>
@@ -200,18 +222,7 @@
 				</div>
 				<div class="grid gap-2 relative">
 					<Label for="itemUnit" class="font-medium text-amber-600 dark:text-amber-400">Item Unit *</Label>
-					<div
-						id="itemUnit-wrapper"
-						class="relative rounded-md transition-all {dropFocus === 'itemUnit' ? 'ring-2 ring-amber-400' : ''}"
-					>
-						<input
-							type="text"
-							class="absolute inset-0 opacity-0 pointer-events-none cursor-default"
-							required
-							value={itemUnit}
-							tabindex="-1"
-							aria-hidden="true"
-						/>
+					<div id="itemUnit" class="relative rounded-md">
 						<input type="hidden" name="itemUnit" value={itemUnit} />
 						<SearchableSelect
 							items={unitItems}
