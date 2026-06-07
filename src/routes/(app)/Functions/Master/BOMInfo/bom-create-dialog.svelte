@@ -124,6 +124,20 @@
 			}
 		}
 	}
+
+	// ── Clear outline when dropdown value changes ──────────────────────────
+	$effect(() => {
+		if (formItem) {
+			const btn = document.querySelector("#BOM_item button") as HTMLElement | null;
+			if (btn) btn.style.outline = "";
+		}
+	});
+	$effect(() => {
+		if (formParentId) {
+			const btn = document.querySelector("#BOM_item_parent button") as HTMLElement | null;
+			if (btn) btn.style.outline = "";
+		}
+	});
 </script>
 
 <Dialog.Root bind:open>
