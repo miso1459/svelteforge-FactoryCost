@@ -27,6 +27,7 @@
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
+	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 	import { SvelteSet } from "svelte/reactivity";
 
 	let { data, form } = $props();
@@ -83,7 +84,7 @@
 	});
 
 	const inputClasses = {
-		required: "border-amber-400 focus-visible:ring-amber-400",
+		required: "border-amber-400 focus-visible:ring-amber-400 focus:ring-2 focus:ring-amber-400",
 		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40",
 	};
 
@@ -294,10 +295,47 @@
 	});
 
 	// ── Form success/error ───────────────────────────────────────────────────
+	function focusField(field: string, id?: number) {
+		if (id !== undefined) {
+			// Inline table: field-id format
+			const el = document.getElementById(`${field}-${id}`);
+			if (el) {
+				const input = el.querySelector("input:not([type=hidden]), textarea, select, button") as HTMLElement | null;
+				(input ?? el).focus();
+			}
+		} else {
+			// Create/Edit dialog: focus the visible input directly
+			const inputId =
+				field === "BOM_item_qty" ? "create-child-qty" :
+				field === "BOM_item_parent_qty" ? "create-parent-qty" :
+				null;
+			if (inputId) {
+				const el = document.getElementById(inputId);
+				if (el) {
+					el.focus();
+					el.style.outline = "2px solid #fbbf24";
+					el.style.outlineOffset = "2px";
+				}
+			} else {
+				const btn = document.querySelector(`#${field} button`) as HTMLElement | null;
+				if (btn) {
+					btn.focus();
+					btn.style.outline = "2px solid #fbbf24";
+					btn.style.outlineOffset = "2px";
+				}
+			}
+		}
+	}
+
 	$effect(() => {
-		if (form?.message) toast.error(form.message);
+		if (form?.message) {
+			toast.error(form.message);
+			if (form?.field) {
+				focusField(form.field as string, form?.id as number | undefined);
+			}
+		}
 		if (form?.success) {
-			toast.success("BOM saved successfully.");
+			toast.success("Saved successfully.");
 			createOpen = false;
 			editOpen = false;
 			deleteOpen = false;
@@ -428,25 +466,30 @@
 		return false;
 	}
 
+	function acctLabel(code: string): string {
+		const entry = ITEM_ACCT.list.find((i) => i.code === code);
+		return entry ? `${code} ${entry.value}` : code;
+	}
+
 	function validateBOMClient(parentCode: string | null, childCode: string): { valid: boolean; message?: string } {
 		const childInfo = data.itemsMap[childCode];
 		if (!childInfo) return { valid: false, message: "Invalid item." };
-		if (childInfo.itemAcct === "50") return { valid: false, message: "Child cannot be Merchandise ('50')." };
+		if (childInfo.itemAcct === "50") return { valid: false, message: `Child cannot be Merchandise ('${acctLabel("50")}').` };
 
 		if (parentCode) {
 			const parentInfo = data.itemsMap[parentCode];
 			if (!parentInfo) return { valid: false, message: "Invalid parent item." };
 			if (parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-				return { valid: false, message: "Parent item must be Product ('10') or Semi-finished Product ('20')." };
+				return { valid: false, message: `Parent item must be Product ('${acctLabel("10")}') or Semi-finished Product ('${acctLabel("20")}').` };
 			}
 			if (childInfo.itemAcct === "10" && parentInfo.itemAcct !== "10") {
-				return { valid: false, message: "If child is Product ('10'), parent must be Product ('10')." };
+				return { valid: false, message: `If child is Product ('${acctLabel("10")}'), parent must be Product ('${acctLabel("10")}').` };
 			}
 			if (childInfo.itemAcct === "20" && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-				return { valid: false, message: "If child is Semi-finished Product ('20'), parent must be Product ('10') or Semi-finished Product ('20')." };
+				return { valid: false, message: `If child is Semi-finished Product ('${acctLabel("20")}'), parent must be Product ('${acctLabel("10")}') or Semi-finished Product ('${acctLabel("20")}').` };
 			}
 			if ((childInfo.itemAcct === "30" || childInfo.itemAcct === "40") && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-				return { valid: false, message: "If child is Raw/Sub material, parent must be Product ('10') or Semi-finished Product ('20')." };
+				return { valid: false, message: `If child is Raw/Sub material, parent must be Product ('${acctLabel("10")}') or Semi-finished Product ('${acctLabel("20")}').` };
 			}
 			if (isAncestorOrSelfBOM(parentCode, childCode)) {
 				return { valid: false, message: "Circular reference detected. Cannot move. (Child is an ancestor of the parent)" };
@@ -566,7 +609,7 @@
 			const response = await fetch("?/reorderBOM", { method: "POST", body: fd });
 			if (response.ok) {
 				await invalidateAll();
-				toast.success("BOM reordered successfully.");
+				toast.success("Reordered successfully.");
 			} else {
 				const resData = await response.json();
 				toast.error(resData?.message || "Failed to update.");
@@ -605,7 +648,7 @@
 			const response = await fetch("?/reorderBOM", { method: "POST", body: fd });
 			if (response.ok) {
 				await invalidateAll();
-				toast.success("BOM reordered successfully.");
+				toast.success("Reordered successfully.");
 			} else {
 				const resData = await response.json();
 				toast.error(resData?.message || "Failed to update.");
@@ -635,7 +678,7 @@
 		const response = await fetch("?/reorderBOM", { method: "POST", body: fd });
 		if (response.ok) {
 			await invalidateAll();
-			toast.success("BOM reordered successfully.");
+			toast.success("Reordered successfully.");
 		} else {
 			const resData = await response.json();
 			toast.error(resData?.message || "Failed to update.");
@@ -693,7 +736,7 @@
 					use:enhance={() => {
 						return async ({ result, update }) => {
 							if (result.type === "success" || result.type === "redirect") {
-								toast.success("BOM saved successfully.");
+								toast.success("Saved successfully.");
 								changes = {};
 							}
 							await update();
@@ -848,7 +891,7 @@
 								{/if}
 								
 								<!-- Item Input Searchable Select -->
-								<div class="w-64">
+								<div class="w-64" id="BOM_item-{fi.item.id}">
 									<SearchableSelect
 										items={childItemOptions}
 										bind:value={() => itemValue, (v) => updateInlineChange(fi.item.id, "BOM_item", v)}
@@ -863,6 +906,7 @@
 						<Table.Cell>
 							<div class="w-24">
 								<Input
+									id="BOM_item_parent_qty-{fi.item.id}"
 									type="text"
 									inputmode="decimal"
 									value={tableQtyDisplay[fi.item.id]?.parent ?? formatQty(parentQtyValue, data.formatQty)}
@@ -881,6 +925,7 @@
 						<Table.Cell>
 							<div class="w-24">
 								<Input
+									id="BOM_item_qty-{fi.item.id}"
 									type="text"
 									inputmode="decimal"
 									value={tableQtyDisplay[fi.item.id]?.child ?? formatQty(itemQtyValue, data.formatQty)}
@@ -1011,6 +1056,13 @@
 					if (result.type === "success" || result.type === "redirect") {
 						createOpen = false;
 						resetForm();
+					} else if (result.type === "failure") {
+						const data = result.data as Record<string, unknown>;
+						if (data?.message) toast.error(data.message as string);
+						if (data?.field) {
+							focusField(data.field as string);
+						}
+						return; // handled — skip update() to prevent duplicate $effect
 					}
 					await update();
 				};
@@ -1018,7 +1070,7 @@
 		>
 			<div class="grid gap-4 py-4">
 				<!-- Parent Item -->
-				<div class="grid gap-2">
+				<div id="BOM_item_parent" class="grid gap-2">
 					<Label for="create-parent" class="text-muted-foreground">Parent Item (Optional)</Label>
 					<SearchableSelect
 						items={parentItemOptions}
@@ -1030,7 +1082,7 @@
 				</div>
 
 				<!-- Parent Qty -->
-				<div class="grid gap-2">
+				<div id="BOM_item_parent_qty" class="grid gap-2">
 					<Label for="create-parent-qty" class="text-amber-600 dark:text-amber-400">Parent Qty *</Label>
 					<input type="hidden" name="BOM_item_parent_qty" value={formParentQty} />
 					<Input
@@ -1046,7 +1098,7 @@
 				</div>
 
 				<!-- Child Item -->
-				<div class="grid gap-2">
+				<div id="BOM_item" class="grid gap-2">
 					<Label for="create-child" class="text-amber-600 dark:text-amber-400">Child Item *</Label>
 					<SearchableSelect
 						items={childItemOptions}
@@ -1058,7 +1110,7 @@
 				</div>
 
 				<!-- Child Qty -->
-				<div class="grid gap-2">
+				<div id="BOM_item_qty" class="grid gap-2">
 					<Label for="create-child-qty" class="text-amber-600 dark:text-amber-400">Child Qty *</Label>
 					<input type="hidden" name="BOM_item_qty" value={formItemQty} />
 					<Input

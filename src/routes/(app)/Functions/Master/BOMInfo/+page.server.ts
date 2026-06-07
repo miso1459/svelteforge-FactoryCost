@@ -1,6 +1,7 @@
 import { db } from "$lib/server/db/index.js";
 import { masterBOM, masterItem, menus, appSettings } from "$lib/server/db/schema.js";
 import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
+import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq, inArray, count } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
@@ -82,6 +83,12 @@ function checkCircular(
 	return false;
 }
 
+/** ITEM_ACCT code → "code + value" (e.g., "10" → "10 제품") */
+function acctLabel(code: string): string {
+	const entry = ITEM_ACCT.list.find((i) => i.code === code);
+	return entry ? `${code} ${entry.value}` : code;
+}
+
 // ITEM_ACCT 비즈니스 규칙 및 검증 헬퍼
 function validateBOM(
 	parentCode: string | null,
@@ -91,32 +98,32 @@ function validateBOM(
 ): { valid: boolean; message?: string } {
 	const childInfo = itemsMap[childCode];
 	if (!childInfo) {
-		return { valid: false, message: `Invalid BOM_item code: ${childCode}` };
+		return { valid: false, message: `Invalid Child Item code: ${childCode}` };
 	}
 
 	if (childInfo.itemAcct === "50") {
-		return { valid: false, message: "BOM_item (child) cannot be Merchandise ('50')." };
+		return { valid: false, message: `Child item cannot be Merchandise ('${acctLabel("50")}').` };
 	}
 
 	if (parentCode) {
 		const parentInfo = itemsMap[parentCode];
 		if (!parentInfo) {
-			return { valid: false, message: `Invalid BOM_item_parent code: ${parentCode}` };
+			return { valid: false, message: `Invalid Parent Item code: ${parentCode}` };
 		}
 
 		if (parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-			return { valid: false, message: "Parent item must be Product ('10') or Semi-finished Product ('20')." };
+			return { valid: false, message: `Parent item must be Product ('${acctLabel("10")}') or Semi-finished Product ('${acctLabel("20")}').` };
 		}
 
 		// 부모-자식 ITEM_ACCT 제약
 		if (childInfo.itemAcct === "10" && parentInfo.itemAcct !== "10") {
-			return { valid: false, message: "If child is Product ('10'), parent must be Product ('10')." };
+			return { valid: false, message: `If child is Product ('${acctLabel("10")}'), parent must be Product ('${acctLabel("10")}').` };
 		}
 		if (childInfo.itemAcct === "20" && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-			return { valid: false, message: "If child is Semi-finished Product ('20'), parent must be Product ('10') or Semi-finished Product ('20')." };
+			return { valid: false, message: `If child is Semi-finished Product ('${acctLabel("20")}'), parent must be Product ('${acctLabel("10")}') or Semi-finished Product ('${acctLabel("20")}').` };
 		}
 		if ((childInfo.itemAcct === "30" || childInfo.itemAcct === "40") && parentInfo.itemAcct !== "10" && parentInfo.itemAcct !== "20") {
-			return { valid: false, message: "If child is Raw/Sub material, parent must be Product ('10') or Semi-finished Product ('20')." };
+			return { valid: false, message: `If child is Raw/Sub material, parent must be Product ('${acctLabel("10")}') or Semi-finished Product ('${acctLabel("20")}').` };
 		}
 
 		// 순환 참조 검사
@@ -183,23 +190,24 @@ export const actions: Actions = {
 		const BOM_remark = formData.get("BOM_remark") as string | null;
 
 		if (!BOM_item || BOM_item.trim().length === 0) {
-			return fail(400, { message: "BOM_item is required." });
+			return fail(400, { field: "BOM_item", message: "Child Item is required." });
 		}
 		if (isNaN(BOM_item_qty) || BOM_item_qty <= 0) {
-			return fail(400, { message: "BOM_item_qty must be greater than 0." });
+			return fail(400, { field: "BOM_item_qty", message: "Child Qty must be greater than 0." });
 		}
 		if (isNaN(BOM_item_parent_qty) || BOM_item_parent_qty <= 0) {
-			return fail(400, { message: "BOM_item_parent_qty must be greater than 0." });
+			return fail(400, { field: "BOM_item_parent_qty", message: "Parent Qty must be greater than 0." });
 		}
 
 		// 비즈니스 규칙 검증을 위해 데이터 조회
 		const activeItems = await db.select().from(masterItem).where(eq(masterItem.isActive, true));
-		const itemsMap = Object.fromEntries(activeItems.map((item) => [item.itemCode, { itemAcct: item.itemAcct }]));
+		const itemsMap = Object.fromEntries(activeItems.map((item) => [item.itemCode, { itemAcct: item.itemAcct, itemDesc: item.itemDesc }]));
 		const flatBOM = await db.select().from(masterBOM);
 
 		const validation = validateBOM(BOM_item_parent || null, BOM_item, itemsMap, flatBOM);
 		if (!validation.valid) {
-			return fail(400, { message: validation.message });
+			const field = validation.message?.includes("Parent") ? "BOM_item_parent" : "BOM_item";
+			return fail(400, { field, message: validation.message });
 		}
 
 		// Load formatQty for rounding
@@ -221,6 +229,8 @@ export const actions: Actions = {
 			);
 		const sortOrder = siblings[0]?.value ?? 0;
 
+		const itemLabel = itemsMap[BOM_item]?.itemDesc ?? BOM_item;
+
 		try {
 			await db.insert(masterBOM).values({
 				BOM_item_parent: BOM_item_parent || null,
@@ -235,7 +245,8 @@ export const actions: Actions = {
 				updatedAt: now,
 			});
 		} catch {
-			return fail(400, { message: "Failed to create BOM item." });
+			const itemLabel = itemsMap[BOM_item]?.itemDesc ?? BOM_item;
+			return fail(400, { message: `Failed to create '${itemLabel}'.` });
 		}
 
 		return { success: true };
@@ -256,18 +267,18 @@ export const actions: Actions = {
 			return fail(400, { message: "Invalid ID." });
 		}
 		if (!BOM_item || BOM_item.trim().length === 0) {
-			return fail(400, { message: "BOM_item is required." });
+			return fail(400, { message: "Child Item is required." });
 		}
 		if (isNaN(BOM_item_qty) || BOM_item_qty <= 0) {
-			return fail(400, { message: "BOM_item_qty must be greater than 0." });
+			return fail(400, { message: "Child Qty must be greater than 0." });
 		}
 		if (isNaN(BOM_item_parent_qty) || BOM_item_parent_qty <= 0) {
-			return fail(400, { message: "BOM_item_parent_qty must be greater than 0." });
+			return fail(400, { message: "Parent Qty must be greater than 0." });
 		}
 
 		// 비즈니스 규칙 검증
 		const activeItems = await db.select().from(masterItem).where(eq(masterItem.isActive, true));
-		const itemsMap = Object.fromEntries(activeItems.map((item) => [item.itemCode, { itemAcct: item.itemAcct }]));
+		const itemsMap = Object.fromEntries(activeItems.map((item) => [item.itemCode, { itemAcct: item.itemAcct, itemDesc: item.itemDesc }]));
 		const allFlatBOM = await db.select().from(masterBOM);
 		const filteredFlatBOM = allFlatBOM.filter(item => item.id !== id);
 
@@ -296,7 +307,8 @@ export const actions: Actions = {
 				})
 				.where(eq(masterBOM.id, id));
 		} catch {
-			return fail(400, { message: "Failed to update BOM item." });
+			const itemLabel = itemsMap[BOM_item]?.itemDesc ?? BOM_item;
+			return fail(400, { message: `Failed to update '${itemLabel}'.` });
 		}
 
 		return { success: true };
@@ -320,7 +332,10 @@ export const actions: Actions = {
 				.from(masterBOM)
 				.where(eq(masterBOM.BOM_item_parent, currentRow[0].BOM_item));
 			if ((childCount[0]?.value ?? 0) > 0) {
-				return fail(400, { message: "Please delete child BOM items first." });
+				// Fetch item label for the error message
+				const item = await db.select({ itemDesc: masterItem.itemDesc }).from(masterItem).where(eq(masterItem.itemCode, currentRow[0].BOM_item)).limit(1);
+				const itemLabel = item[0]?.itemDesc ?? currentRow[0].BOM_item;
+				return fail(400, { message: `Please delete child items of '${itemLabel}' first.` });
 			}
 		}
 
@@ -454,12 +469,18 @@ export const actions: Actions = {
 
 		// 비즈니스 규칙 검증
 		const activeItems = await db.select().from(masterItem).where(eq(masterItem.isActive, true));
-		const itemsMap = Object.fromEntries(activeItems.map((item) => [item.itemCode, { itemAcct: item.itemAcct }]));
+		const itemsMap = Object.fromEntries(activeItems.map((item) => [item.itemCode, { itemAcct: item.itemAcct, itemDesc: item.itemDesc }]));
 		const allFlatBOM = await db.select().from(masterBOM);
 
 		for (const c of changes) {
-			if (!c.BOM_item || c.BOM_item_qty <= 0 || c.BOM_item_parent_qty <= 0) {
-				return fail(400, { message: "BOM item quantities must be greater than 0." });
+			if (!c.BOM_item) {
+				return fail(400, { field: "BOM_item", id: c.id, message: "Child Item is required." });
+			}
+			if (c.BOM_item_qty <= 0) {
+				return fail(400, { field: "BOM_item_qty", id: c.id, message: "Child Qty must be greater than 0." });
+			}
+			if (c.BOM_item_parent_qty <= 0) {
+				return fail(400, { field: "BOM_item_parent_qty", id: c.id, message: "Parent Qty must be greater than 0." });
 			}
 			
 			const currentItem = allFlatBOM.find(item => item.id === c.id);
