@@ -188,4 +188,62 @@ export const actions: Actions = {
 
 		return { success: true };
 	},
+
+	saveItems: async ({ request, locals }) => {
+		if (!locals.user) redirect(302, "/login");
+
+		const formData = await request.formData();
+		const changesJson = formData.get("changes") as string | null;
+
+		if (!changesJson) {
+			return fail(400, { message: "No change data." });
+		}
+
+		type ChangeItem = {
+			itemCode: string;
+			itemDesc: string;
+			itemSpec: string | null;
+			itemUnit: string | null;
+			stdPrice: number | null;
+			isActive: boolean;
+			itemRemark: string | null;
+		};
+		let changes: ChangeItem[];
+		try {
+			changes = JSON.parse(changesJson);
+		} catch {
+			return fail(400, { message: "Invalid change data format." });
+		}
+
+		// 필드 검증
+		for (const c of changes) {
+			if (!c.itemCode || !c.itemDesc) {
+				return fail(400, { message: "Item Code and Item Desc are required." });
+			}
+		}
+
+		// Load formatPrice for rounding
+		const fmtSetting = await db.query.appSettings.findFirst({
+			where: eq(appSettings.key, "formatPrice"),
+		});
+		const fmt = fmtSetting?.value ?? "#,##0.00";
+
+		for (const c of changes) {
+			await db
+				.update(masterItem)
+				.set({
+					itemDesc: c.itemDesc,
+					itemSpec: c.itemSpec || null,
+					itemUnit: c.itemUnit || null,
+					stdPrice: roundByFormat(c.stdPrice, fmt),
+					isActive: c.isActive,
+					itemRemark: c.itemRemark || null,
+					updatedBy: locals.user.name,
+					updatedAt: new Date(),
+				})
+				.where(eq(masterItem.itemCode, c.itemCode));
+		}
+
+		return { success: true };
+	},
 };

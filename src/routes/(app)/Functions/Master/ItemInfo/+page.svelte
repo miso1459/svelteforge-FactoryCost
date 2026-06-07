@@ -23,7 +23,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
 	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
-	import { parseFormatPattern, formatStdPrice } from "$lib/utils/format.js";
+	import { formatStdPrice } from "$lib/utils/format.js";
 
 	let { data, form } = $props();
 
@@ -50,6 +50,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 
 	let stdPriceDisplays = $state<Record<string, string>>({});
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function updateInlineChange(id: string, field: string, value: any) {
 		const original = data.records.find((r) => r.itemCode === id);
 		if (!original) return;
@@ -388,7 +389,7 @@ import { Label } from "$lib/components/ui/label/index.js";
 									inputmode="decimal"
 									value={stdPriceDisplays[record.itemCode] ?? formatStdPrice(changes[record.itemCode]?.stdPrice ?? record.stdPrice, data.formatPrice)}
 									oninput={(e) => {
-										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.-]/g, "");
 										stdPriceDisplays[record.itemCode] = raw;
 										updateInlineChange(record.itemCode, "stdPrice", raw === "" ? null : raw);
 									}}
