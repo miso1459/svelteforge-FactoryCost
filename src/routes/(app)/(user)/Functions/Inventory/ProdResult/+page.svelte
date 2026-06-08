@@ -1,0 +1,600 @@
+<script lang="ts">
+	import * as Table from "$lib/components/ui/table/index.js";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+	import { Button } from "$lib/components/ui/button/index.js";
+	import { Input } from "$lib/components/ui/input/index.js";
+	import { Textarea } from "$lib/components/ui/textarea/index.js";
+	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
+	import InvTranFormDialog from "./inv-tran-form-dialog.svelte";
+	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
+	import PlusIcon from "@lucide/svelte/icons/plus";
+	import TrashIcon from "@lucide/svelte/icons/trash-2";
+	import SearchIcon from "@lucide/svelte/icons/search";
+	import ArrowUpDownIcon from "@lucide/svelte/icons/arrow-up-down";
+	import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
+	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
+	import DownloadIcon from "@lucide/svelte/icons/download";
+	import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
+	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
+	import UndoIcon from "@lucide/svelte/icons/undo-2";
+	import SaveIcon from "@lucide/svelte/icons/save";
+	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import { Label } from "$lib/components/ui/label/index.js";
+	import { toast } from "svelte-sonner";
+	import { enhance } from "$app/forms";
+	import { invalidateAll } from "$app/navigation";
+	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
+	import { TRAN_TYPE, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import SearchableSelect from "$lib/components/searchable-select.svelte";
+	import { formatStdPrice } from "$lib/utils/format.js";
+
+	let { data, form } = $props();
+	// data.records: InvTran[]
+	// data.formatQty: string
+	// data.currentMenu: { name, desc } | null
+	// data.itemInfo: { title: string; list: { code: string; value: string }[] }
+
+	// ── Date range (T03 pattern) ─────────────────────────────────────────────
+	const today = new Date();
+	const defaultFrom = new Date(today);
+	defaultFrom.setDate(defaultFrom.getDate() - 7);
+
+	function dateStr(d: Date) {
+		return d.toISOString().slice(0, 10);
+	}
+
+	function parseDate(s: string) {
+		return new Date(s + "T00:00:00");
+	}
+
+	let fromDate = $state(dateStr(defaultFrom));
+	let toDate = $state(dateStr(today));
+
+	let search = $state("");
+	let createOpen = $state(false);
+	let deleteOpen = $state(false);
+	let sortKey = $state<string>("id");
+	let sortDir = $state<"asc" | "desc">("desc");
+	let pageSize = $state(10);
+	let currentPage = $state(1);
+	let selectedIds = $state(new Set<string>());
+
+	// ── Inline Edit State ────────────────────────────────────────────────────
+	let changes = $state<Record<number, {
+		documentDt: string;
+		tranType: string;
+		tranItem: string;
+		tranQty: number | null;
+		tranPrice: number | null;
+		tranRemark: string;
+	}>>({});
+	const hasChanges = $derived(Object.keys(changes).length > 0);
+
+	let qtyDisplays = $state<Record<number, string>>({});
+	let priceDisplays = $state<Record<number, string>>({});
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	function updateInlineChange(id: number, field: string, value: any) {
+		const original = data.records.find((r) => r.id === id);
+		if (!original) return;
+
+		if (!changes[id]) {
+			changes[id] = {
+				documentDt: original.documentDt ? new Date(original.documentDt).toISOString().slice(0, 10) : "",
+				tranType: original.tranType,
+				tranItem: original.tranItem,
+				tranQty: original.tranQty,
+				tranPrice: original.tranPrice,
+				tranRemark: original.tranRemark ?? "",
+			};
+		}
+
+		if (field === "documentDt") changes[id].documentDt = value;
+		if (field === "tranType") changes[id].tranType = value;
+		if (field === "tranItem") changes[id].tranItem = value;
+		if (field === "tranQty") changes[id].tranQty = value === "" || value === null ? null : parseFloat(value) || 0;
+		if (field === "tranPrice") changes[id].tranPrice = value === "" || value === null ? null : parseFloat(value) || 0;
+		if (field === "tranRemark") changes[id].tranRemark = value;
+
+		// Remove if back to original
+		const c = changes[id];
+		const origDt = original.documentDt ? new Date(original.documentDt).toISOString().slice(0, 10) : "";
+		const isSame =
+			c.documentDt === origDt &&
+			c.tranType === original.tranType &&
+			c.tranItem === original.tranItem &&
+			c.tranQty === original.tranQty &&
+			c.tranPrice === original.tranPrice &&
+			c.tranRemark === (original.tranRemark ?? "");
+
+		if (isSame) {
+			const next = { ...changes };
+			delete next[id];
+			changes = next;
+		}
+	}
+
+	function revertAllChanges() {
+		changes = {};
+		qtyDisplays = {};
+		priceDisplays = {};
+		toast.success("All changes reverted.");
+	}
+
+	let deleteId = $state("");
+	let auditOpen = $state(false);
+	let auditRecord = $state<{
+		createdBy: string;
+		updatedBy: string;
+		createdAt: Date | null;
+		updatedAt: Date | null;
+	} | null>(null);
+
+	// Resolve TRAN_TYPE code to display value
+	function tranTypeLabel(code: string): string {
+		const item = TRAN_TYPE.list.find((i) => i.code === code);
+		return item ? item.value : code;
+	}
+
+	const tranTypeItems = $derived(TRAN_TYPE.list.filter((i) => i.opt2 === "1"));
+	const tranItemItems = $derived(data.itemInfo.list);
+
+	// Per-row dropdown: active items + current row's item if inactive (not in active list)
+	const getTranItemItemsWithCurrent = (rowTranItem: string) => {
+		const activeItems = data.itemInfo.list;
+		const activeCodes = new Set(activeItems.map((i) => i.code));
+		if (activeCodes.has(rowTranItem)) return activeItems;
+		// Current item is inactive — prepend it so it appears at top
+		const currentItem = data.allItemInfoMap?.get(rowTranItem);
+		if (currentItem) {
+			return [{ code: rowTranItem, value: currentItem.value, stdPrice: currentItem.stdPrice }, ...activeItems];
+		}
+		return activeItems;
+	};
+
+	const dateFiltered = $derived(() => {
+		const from = parseDate(fromDate);
+		const toEnd = parseDate(toDate);
+		toEnd.setHours(23, 59, 59, 999);
+		return data.records.filter((r) => {
+			const d = r.documentDt ? new Date(r.documentDt) : null;
+			if (!d) return false;
+			return d >= from && d <= toEnd;
+		});
+	});
+
+	function dateSearchStrings(date: Date | null): string[] {
+		if (!date) return [];
+		const d = new Date(date);
+		const y = d.getFullYear();
+		const mm = pad(d.getMonth() + 1);
+		const dd = pad(d.getDate());
+		return [`${y}${mm}${dd}`, `${y}-${mm}-${dd}`];
+	}
+
+	const filtered = $derived(
+		dateFiltered().filter(
+			(r) =>
+				r.tranType.toLowerCase().includes(search.toLowerCase()) ||
+				r.tranItem.toLowerCase().includes(search.toLowerCase()) ||
+				String(r.tranQty).includes(search) ||
+				String(r.tranPrice).includes(search) ||
+				String(r.tranAmount).includes(search) ||
+				(r.tranRemark ?? "").toLowerCase().includes(search.toLowerCase()) ||
+				tranTypeLabel(r.tranType).toLowerCase().includes(search.toLowerCase()) ||
+				dateSearchStrings(r.documentDt).some((s) => s.includes(search))
+		)
+	);
+
+	const sorted = $derived(() => {
+		const arr = [...filtered];
+		arr.sort((a, b) => {
+			const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
+			const bVal = String((b as Record<string, unknown>)[sortKey] ?? "");
+			const cmp = aVal.localeCompare(bVal);
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+		return arr;
+	});
+
+	const paginated = $derived(sorted().slice((currentPage - 1) * pageSize, currentPage * pageSize));
+
+	$effect(() => {
+		search; fromDate; toDate;
+		currentPage = 1;
+	});
+
+	function focusField(field: string, id?: number) {
+		if (id !== undefined) {
+			const el = document.getElementById(`${field}-${id}`);
+			if (el) {
+				const input = el.querySelector("input:not([type=hidden]), textarea, select, button") as HTMLElement | null;
+				(input ?? el).focus();
+			}
+		}
+	}
+
+	$effect(() => {
+		if (form?.message) {
+			toast.error(form.message);
+			const formAny = form as Record<string, unknown>;
+			if (formAny.field) {
+				focusField(formAny.field as string, formAny.id as number | undefined);
+			}
+		}
+		if (form?.success) {
+			toast.success("Record saved successfully");
+			selectedIds = new Set();
+			changes = {};
+			qtyDisplays = {};
+		}
+	});
+
+	function toggleSort(key: string) {
+		if (sortKey === key) {
+			sortDir = sortDir === "asc" ? "desc" : "asc";
+		} else {
+			sortKey = key;
+			sortDir = "asc";
+		}
+	}
+
+	function sortIcon(key: string) {
+		if (sortKey !== key) return ArrowUpDownIcon;
+		return sortDir === "asc" ? ArrowUpIcon : ArrowDownIcon;
+	}
+
+	function toggleSelect(id: string) {
+		const next = new Set(selectedIds);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		selectedIds = next;
+	}
+
+	function toggleSelectAll() {
+		if (selectedIds.size === paginated.length) {
+			selectedIds = new Set();
+		} else {
+			selectedIds = new Set(paginated.map((r) => String(r.id)));
+		}
+	}
+
+	function pad(n: number): string {
+		return n.toString().padStart(2, "0");
+	}
+
+	function formatDate(date: Date | null) {
+		if (!date) return "—";
+		const d = new Date(date);
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	}
+
+	function formatDateTime(date: Date | null) {
+		if (!date) return "—";
+		const d = new Date(date);
+		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+	}
+
+	function openDelete(id: number) {
+		deleteId = String(id);
+		deleteOpen = true;
+	}
+
+	function openAudit(record: (typeof data.records)[0]) {
+		auditRecord = {
+			createdBy: record.createdBy,
+			updatedBy: record.updatedBy,
+			createdAt: record.createdAt,
+			updatedAt: record.updatedAt,
+		};
+		auditOpen = true;
+	}
+
+	let refreshing = $state(false);
+
+	async function handleRefresh() {
+		refreshing = true;
+		await invalidateAll();
+		refreshing = false;
+		toast.success("Data refreshed");
+	}
+
+	function handleExport(format: "csv" | "json") {
+		const exportData = filtered.map((r) => ({
+			documentDt: formatDate(r.documentDt),
+			tranType: tranTypeLabel(r.tranType),
+			tranItem: r.tranItem,
+			tranQty: r.tranQty,
+			tranPrice: r.tranPrice,
+			tranAmount: r.tranAmount,
+			tranRemark: r.tranRemark ?? "",
+		}));
+		if (format === "csv") exportToCSV(exportData, "Inv_Tran");
+		else exportToJSON(exportData, "Inv_Tran");
+	}
+
+	const columns = [
+		{ key: "documentDt", label: "Document Dt" },
+		{ key: "tranType", label: "Tran Type" },
+		{ key: "tranItem", label: "Tran Item" },
+		{ key: "tranQty", label: "Tran Qty" },
+		{ key: "tranPrice", label: "Tran Price" },
+		{ key: "tranAmount", label: "Tran Amount" },
+		{ key: "tranRemark", label: "Tran Remark" },
+	];
+</script>
+
+<svelte:head>
+	<title>Inv Tran - SvelteForge Factory Cost</title>
+</svelte:head>
+
+<div class="min-w-0 space-y-6">
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Inv Tran"}</h1>
+			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "Manage inventory transactions."}</p>
+		</div>
+		<div class="flex items-center gap-2">
+			{#if hasChanges}
+				<Button variant="outline" size="sm" onclick={revertAllChanges} class="border-amber-500 text-amber-500 hover:bg-amber-500/10">
+					<UndoIcon class="mr-2 size-4" />
+					Cancel
+				</Button>
+				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; qtyDisplays = {}; priceDisplays = {}; } else if (result.type === "failure") { const errData = result.data as { message?: string; field?: string; id?: number } | undefined; if (errData?.message) toast.error(errData.message); if (errData?.field && errData?.id !== undefined) { focusField(errData.field, errData.id); } } await update(); }; }}>
+					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), documentDt: val.documentDt || null, tranType: val.tranType || null, tranItem: val.tranItem || null, tranQty: val.tranQty, tranPrice: val.tranPrice, tranRemark: val.tranRemark || null })))} />
+					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
+						<SaveIcon class="mr-2 size-4" />
+						Save
+					</Button>
+				</form>
+			{/if}
+			<Button onclick={() => (createOpen = true)}>
+				<PlusIcon class="mr-2 size-4" />
+				Add Tran
+			</Button>
+		</div>
+	</div>
+
+	<!-- Date Range Row (T03 pattern) -->
+	<div class="flex items-center gap-3">
+		<div class="flex items-center gap-2">
+			<Label for="fromDate" class="text-xs text-muted-foreground">From</Label>
+			<Input id="fromDate" type="date" class="w-36" bind:value={fromDate} />
+		</div>
+		<div class="flex items-center gap-2">
+			<Label for="toDate" class="text-xs text-muted-foreground">To</Label>
+			<Input id="toDate" type="date" class="w-36" bind:value={toDate} />
+		</div>
+	</div>
+
+	<!-- Search + Actions Row -->
+	<div class="flex items-center gap-2">
+		<div class="relative max-w-sm flex-1">
+			<SearchIcon class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+			<Input placeholder="Search records..." class="pl-9" bind:value={search} />
+		</div>
+		<Button variant="ghost" size="icon" class="size-8 shrink-0" onclick={handleRefresh} disabled={refreshing}>
+			<RefreshCwIcon class="size-4 {refreshing ? 'animate-spin' : ''}" />
+		</Button>
+		<p class="text-muted-foreground text-sm shrink-0">
+			{filtered.length} record{filtered.length !== 1 ? "s" : ""}
+		</p>
+		<div class="ml-auto flex items-center gap-2 shrink-0">
+			{#if selectedIds.size > 0}
+				<form method="POST" action="?/bulkDelete" use:enhance>
+					<input type="hidden" name="ids" value={[...selectedIds].join(",")} />
+					<Button variant="destructive" size="sm" type="submit">
+						<TrashIcon class="mr-2 size-4" />
+						Delete {selectedIds.size}
+					</Button>
+				</form>
+			{/if}
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button variant="outline" size="sm" {...props}>
+							<DownloadIcon class="mr-2 size-4" />
+							Export
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content>
+					<DropdownMenu.Item onclick={() => handleExport("csv")}>Export as CSV</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => handleExport("json")}>Export as JSON</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
+		</div>
+	</div>
+
+	<!-- Table -->
+	<div class="w-full overflow-x-auto rounded-md border">
+		<Table.Root class="whitespace-nowrap">
+			<Table.Header>
+				<Table.Row>
+					<Table.Head class="sticky left-0 z-[1] w-[40px] bg-background">
+						<input
+							type="checkbox"
+							checked={paginated.length > 0 && selectedIds.size === paginated.length}
+							onchange={toggleSelectAll}
+							class="accent-primary size-4"
+						/>
+					</Table.Head>
+					{#each columns as col (col.key)}
+						{@const SortIcon = sortIcon(col.key)}
+						<Table.Head>
+							<button
+								class="flex items-center gap-1 text-left font-medium"
+								onclick={() => toggleSort(col.key)}
+							>
+								{col.label}
+								<SortIcon class="text-muted-foreground size-3" />
+							</button>
+						</Table.Head>
+					{/each}
+					<Table.Head class="sticky right-0 z-[1] w-[140px] bg-background">Actions</Table.Head>
+				</Table.Row>
+			</Table.Header>
+			<Table.Body>
+				{#each paginated as record (record.id)}
+					{@const rid = String(record.id)}
+					{@const isModified = Boolean(changes[record.id])}
+					<Table.Row class={[
+						selectedIds.has(rid) ? 'bg-muted/50' : '',
+						isModified ? 'bg-amber-500/10 dark:bg-amber-500/20' : '',
+						'[&>td]:align-top [&>td]:pb-0'
+					].filter(Boolean).join(' ')}>
+						<Table.Cell class="sticky left-0 z-[1] bg-background">
+							<input
+								type="checkbox"
+								checked={selectedIds.has(rid)}
+								onchange={() => toggleSelect(rid)}
+								class="accent-primary size-4"
+							/>
+						</Table.Cell>
+						<Table.Cell class="font-medium">
+							<div class="w-36" id="documentDt-{record.id}">
+								<Input
+									type="date"
+									value={changes[record.id]?.documentDt ?? (record.documentDt ? new Date(record.documentDt).toISOString().slice(0, 10) : "")}
+									oninput={(e) => updateInlineChange(record.id, "documentDt", (e.target as HTMLInputElement).value)}
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-36" id="tranType-{record.id}">
+								<SearchableSelect
+									items={tranTypeItems}
+									bind:value={() => changes[record.id]?.tranType ?? record.tranType, (v) => updateInlineChange(record.id, "tranType", v)}
+									placeholder="Select type..."
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-48" id="tranItem-{record.id}">
+								<SearchableSelect
+									items={getTranItemItemsWithCurrent(record.tranItem)}
+									bind:value={() => changes[record.id]?.tranItem ?? record.tranItem, (v) => updateInlineChange(record.id, "tranItem", v)}
+									placeholder="Select item..."
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-28" id="tranQty-{record.id}">
+								<Input
+									type="text"
+									inputmode="decimal"
+									value={qtyDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranQty ?? record.tranQty, data.formatQty)}
+									oninput={(e) => {
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										qtyDisplays[record.id] = raw;
+										updateInlineChange(record.id, "tranQty", raw === "" ? null : raw);
+									}}
+									onblur={() => {
+										const val = changes[record.id]?.tranQty ?? record.tranQty;
+										qtyDisplays[record.id] = formatStdPrice(val, data.formatQty);
+									}}
+									class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-28" id="tranPrice-{record.id}">
+								<Input
+									type="text"
+									inputmode="decimal"
+									value={priceDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranPrice ?? record.tranPrice, data.formatQty)}
+									oninput={(e) => {
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										priceDisplays[record.id] = raw;
+										updateInlineChange(record.id, "tranPrice", raw === "" ? null : raw);
+									}}
+									onblur={() => {
+										const val = changes[record.id]?.tranPrice ?? record.tranPrice;
+										priceDisplays[record.id] = formatStdPrice(val, data.formatQty);
+									}}
+									class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell class="text-right">
+							<span class="text-xs text-muted-foreground">
+								{formatStdPrice((changes[record.id]?.tranQty ?? record.tranQty) * (changes[record.id]?.tranPrice ?? record.tranPrice), data.formatQty)}
+							</span>
+						</Table.Cell>
+						<Table.Cell>
+							<div class="w-48">
+								<Textarea
+									value={changes[record.id]?.tranRemark ?? record.tranRemark ?? ""}
+									oninput={(e) => updateInlineChange(record.id, "tranRemark", (e.target as HTMLTextAreaElement).value)}
+									placeholder="—"
+									class="text-xs min-h-[2rem] border-muted-foreground/20 focus-visible:ring-muted-foreground/40"
+									rows={1}
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell class="sticky right-0 z-[1] bg-background">
+							<div class="flex items-center gap-1">
+								<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit(record)}>
+									<ScrollTextIcon class="size-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									class="text-destructive size-8"
+									onclick={() => openDelete(record.id)}
+								>
+									<TrashIcon class="size-4" />
+								</Button>
+							</div>
+						</Table.Cell>
+					</Table.Row>
+				{:else}
+					<Table.Row>
+						<Table.Cell colspan={9} class="h-24 text-center">
+							{search || fromDate || toDate ? "No records match your filters." : "No records found."}
+						</Table.Cell>
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
+		<DataTablePagination totalItems={filtered.length} bind:pageSize bind:currentPage />
+	</div>
+</div>
+
+<InvTranFormDialog bind:open={createOpen} mode="create" formatQty={data.formatQty} itemInfo={data.itemInfo} defaultDt={toDate} />
+<DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
+
+<Dialog.Root bind:open={auditOpen}>
+	<Dialog.Content class="sm:max-w-[400px]">
+		<Dialog.Header>
+			<Dialog.Title>Audit Trail</Dialog.Title>
+			<Dialog.Description>Record creation and modification history.</Dialog.Description>
+		</Dialog.Header>
+		{#if auditRecord}
+			<div class="grid gap-4 py-4">
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Created By</Label>
+					<p class="text-sm font-medium">{auditRecord.createdBy}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Updated By</Label>
+					<p class="text-sm font-medium">{auditRecord.updatedBy}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Created At</Label>
+					<p class="text-sm font-medium">{formatDateTime(auditRecord.createdAt)}</p>
+				</div>
+				<div class="grid gap-1">
+					<Label class="text-muted-foreground text-xs">Updated At</Label>
+					<p class="text-sm font-medium">{formatDateTime(auditRecord.updatedAt)}</p>
+				</div>
+			</div>
+		{/if}
+		<Dialog.Footer>
+			<Button onclick={() => (auditOpen = false)}>Close</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
