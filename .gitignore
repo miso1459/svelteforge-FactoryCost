@@ -30,3 +30,5 @@ vite.config.ts.timestamp-*
 .omo/
 graphify-out/
 .reasonix/
+.playwright-mcp/
+/qa*
