@@ -33,7 +33,7 @@ function resolveAcctName(code: string): string {
 }
 
 /**
- * Fetch ITEM_INFO from the Master_Item DB table.
+ * Fetch ITEM_INFO from the Master_Item DB table (active only).
  * Value = Item_Acct 명칭 + Item_Desc + Item_Spec + Item_Unit,
  * each field padded to 20 chars (left-aligned).
  *
@@ -59,4 +59,55 @@ export async function getItemInfo(): Promise<CodeValueGroup> {
       stdPrice: r.stdPrice ?? 0,
     })),
   };
+}
+
+/**
+ * Fetch ALL items (active + inactive) from Master_Item.
+ * Used when a row's saved item may be inactive — it must still appear
+ * in the dropdown alongside all active items.
+ */
+export async function getAllItemInfo(): Promise<CodeValueGroup> {
+  const records = await db
+    .select()
+    .from(masterItem)
+    .orderBy(asc(masterItem.itemAcct), asc(masterItem.itemCode));
+
+  return {
+    title: "ALL_ITEM_INFO",
+    list: records.map((r) => ({
+      code: r.itemCode,
+      value:
+        padField(resolveAcctName(r.itemAcct)) +
+        padField(r.itemDesc) +
+        padField(r.itemSpec ?? "") +
+        padField(r.itemUnit ?? ""),
+      stdPrice: r.stdPrice ?? 0,
+    })),
+  };
+}
+
+export type ItemInfoMap = Map<string, { value: string; stdPrice: number }>;
+
+/**
+ * Returns a Map keyed by itemCode for fast lookup.
+ * Useful in +page.svelte for per-row dropdown augmentation.
+ */
+export async function getAllItemInfoMap(): Promise<ItemInfoMap> {
+  const records = await db
+    .select()
+    .from(masterItem)
+    .orderBy(asc(masterItem.itemAcct), asc(masterItem.itemCode));
+
+  const map: ItemInfoMap = new Map();
+  for (const r of records) {
+    map.set(r.itemCode, {
+      value:
+        padField(resolveAcctName(r.itemAcct)) +
+        padField(r.itemDesc) +
+        padField(r.itemSpec ?? "") +
+        padField(r.itemUnit ?? ""),
+      stdPrice: r.stdPrice ?? 0,
+    });
+  }
+  return map;
 }

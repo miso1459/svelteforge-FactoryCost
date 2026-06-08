@@ -3,7 +3,7 @@ import { invTran, appSettings, menus } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq, desc } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
-import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
+import { getItemInfo, getAllItemInfoMap } from "$lib/(user)/Common/DropdownItemInfo.js";
 
 // helpers
 function parseFormatDecimalPlaces(format: string): number {
@@ -36,8 +36,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	});
 
 	const itemInfo = await getItemInfo();
+	const allItemInfoMap = await getAllItemInfoMap();
 
-	return { records: allRecords, currentUserName: locals.user.name, formatQty, currentMenu, itemInfo };
+	return { records: allRecords, currentUserName: locals.user.name, formatQty, currentMenu, itemInfo, allItemInfoMap };
 };
 
 export const actions: Actions = {

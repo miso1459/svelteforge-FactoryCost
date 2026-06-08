@@ -139,6 +139,19 @@
 	const tranTypeItems = $derived(TRAN_TYPE.list.filter((i) => i.opt2 === "1"));
 	const tranItemItems = $derived(data.itemInfo.list);
 
+	// Per-row dropdown: active items + current row's item if inactive (not in active list)
+	const getTranItemItemsWithCurrent = (rowTranItem: string) => {
+		const activeItems = data.itemInfo.list;
+		const activeCodes = new Set(activeItems.map((i) => i.code));
+		if (activeCodes.has(rowTranItem)) return activeItems;
+		// Current item is inactive — prepend it so it appears at top
+		const currentItem = data.allItemInfoMap?.get(rowTranItem);
+		if (currentItem) {
+			return [{ code: rowTranItem, value: currentItem.value, stdPrice: currentItem.stdPrice }, ...activeItems];
+		}
+		return activeItems;
+	};
+
 	const dateFiltered = $derived(() => {
 		const from = parseDate(fromDate);
 		const toEnd = parseDate(toDate);
@@ -461,7 +474,7 @@
 						<Table.Cell>
 							<div class="w-48" id="tranItem-{record.id}">
 								<SearchableSelect
-									items={tranItemItems}
+									items={getTranItemItemsWithCurrent(record.tranItem)}
 									bind:value={() => changes[record.id]?.tranItem ?? record.tranItem, (v) => updateInlineChange(record.id, "tranItem", v)}
 									placeholder="Select item..."
 									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
