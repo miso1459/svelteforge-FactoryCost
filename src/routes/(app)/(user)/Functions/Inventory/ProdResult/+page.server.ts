@@ -1,9 +1,10 @@
 import { db } from "$lib/server/db/index.js";
-import { invTran, appSettings, menus } from "$lib/server/db/schema.js";
+import { invTran, appSettings, menus, masterBOM, masterItem } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray, asc } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
-import { getItemInfo, getAllItemInfoMap } from "$lib/(user)/Common/DropdownItemInfo.js";
+import { getAllItemInfoMap } from "$lib/(user)/Common/DropdownItemInfo.js";
+import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 
 // helpers
 function parseFormatDecimalPlaces(format: string): number {
@@ -18,12 +19,23 @@ function roundByFormat(value: number | null | undefined, format: string): number
 	return Number(value.toFixed(dp));
 }
 
+function padField(str: string): string {
+	return str.padEnd(20, " ");
+}
+
+/** ITEM_ACCT code → display name lookup */
+const ACCT_NAME_MAP: Record<string, string> = Object.fromEntries(
+	ITEM_ACCT.list.map((item) => [item.code, item.value])
+);
+
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(302, "/login");
 
+	// R03 records only
 	const allRecords = await db
 		.select()
 		.from(invTran)
+		.where(eq(invTran.tranType, "R03"))
 		.orderBy(desc(invTran.id));
 
 	const formatSetting = await db.query.appSettings.findFirst({
@@ -35,7 +47,26 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		where: eq(menus.path, url.pathname),
 	});
 
-	const itemInfo = await getItemInfo();
+	// Production items only: ITEM_ACCT IN ('10', '20')
+	const productionRecords = await db
+		.select()
+		.from(masterItem)
+		.where(and(eq(masterItem.isActive, true), inArray(masterItem.itemAcct, ["10", "20"])))
+		.orderBy(asc(masterItem.itemAcct), asc(masterItem.itemCode));
+
+	const itemInfo = {
+		title: "ITEM_INFO / 품목 정보",
+		list: productionRecords.map((r) => ({
+			code: r.itemCode,
+			value:
+				padField(ACCT_NAME_MAP[r.itemAcct] || r.itemAcct) +
+				padField(r.itemDesc) +
+				padField(r.itemSpec ?? "") +
+				padField(r.itemUnit ?? ""),
+			stdPrice: r.stdPrice ?? 0,
+		})),
+	};
+
 	const allItemInfoMap = await getAllItemInfoMap();
 
 	return { records: allRecords, currentUserName: locals.user.name, formatQty, currentMenu, itemInfo, allItemInfoMap };
@@ -79,19 +110,49 @@ export const actions: Actions = {
 		const price = roundByFormat(Number(tranPrice) || 0, fmt) ?? 0;
 		const amount = roundByFormat(qty * price, fmt) ?? 0;
 
-		await db.insert(invTran).values({
-			documentDt,
-			tranType,
-			tranItem,
-			tranQty: qty,
-			tranPrice: price,
-			tranAmount: amount,
-			tranRemark: typeof tranRemark === "string" && tranRemark.trim() ? tranRemark : null,
-			createdBy: userName,
-			createdAt: now,
-			updatedBy: userName,
-			updatedAt: now,
-		});
+		// Insert R03 and return the inserted row
+		const [inserted] = await db
+			.insert(invTran)
+			.values({
+				documentDt,
+				tranType,
+				tranItem,
+				tranQty: qty,
+				tranPrice: price,
+				tranAmount: amount,
+				tranRemark: typeof tranRemark === "string" && tranRemark.trim() ? tranRemark : null,
+				createdBy: userName,
+				createdAt: now,
+				updatedBy: userName,
+				updatedAt: now,
+			})
+			.returning();
+
+		const r03Id = inserted.id;
+
+		// Auto-create I01 records based on BOM
+		const bomRecords = await db
+			.select()
+			.from(masterBOM)
+			.where(eq(masterBOM.BOM_item_parent, tranItem));
+
+		for (const bom of bomRecords) {
+			const i01Qty = (bom.BOM_item_qty || 1) * qty;
+			await db.insert(invTran).values({
+				documentDt,
+				tranType: "I01",
+				tranItem: bom.BOM_item,
+				tranQty: roundByFormat(i01Qty, fmt) ?? 0,
+				tranPrice: 0,
+				tranAmount: 0,
+				tranRemark: `Auto from R03 #${r03Id}`,
+				prodId: String(r03Id),
+				createdBy: userName,
+				createdAt: now,
+				updatedBy: userName,
+				updatedAt: now,
+			});
+		}
 
 		return { success: true };
 	},
@@ -165,6 +226,12 @@ export const actions: Actions = {
 			return fail(400, { message: "Invalid ID" });
 		}
 
+		// Delete associated I01 records first
+		await db
+			.delete(invTran)
+			.where(and(eq(invTran.prodId, String(id)), eq(invTran.tranType, "I01")));
+
+		// Then delete the R03
 		await db.delete(invTran).where(eq(invTran.id, id));
 
 		return { success: true };
@@ -187,6 +254,11 @@ export const actions: Actions = {
 
 		try {
 			for (const id of ids) {
+				// Delete associated I01 first
+				await db
+					.delete(invTran)
+					.where(and(eq(invTran.prodId, String(id)), eq(invTran.tranType, "I01")));
+				// Then delete R03
 				await db.delete(invTran).where(eq(invTran.id, id));
 			}
 		} catch {
@@ -214,6 +286,7 @@ export const actions: Actions = {
 			tranQty: number;
 			tranPrice: number;
 			tranRemark: string | null;
+			prodId: string | null;
 		};
 		let changes: ChangeItem[];
 		try {
@@ -222,15 +295,16 @@ export const actions: Actions = {
 			return fail(400, { message: "Invalid change data format." });
 		}
 
+		// Only process R03 records
 		for (const c of changes) {
 			if (!c.id || isNaN(c.id)) {
 				return fail(400, { message: "Invalid ID in change data." });
 			}
+			if (c.tranType !== "R03") {
+				return fail(400, { message: `Only R03 records can be saved. ID ${c.id} is ${c.tranType}.` });
+			}
 			if (!c.documentDt || typeof c.documentDt !== "string") {
 				return fail(400, { message: `Document Date is required for ID ${c.id}.` });
-			}
-			if (!c.tranType || typeof c.tranType !== "string") {
-				return fail(400, { message: `Tran Type is required for ID ${c.id}.` });
 			}
 			if (!c.tranItem || typeof c.tranItem !== "string") {
 				return fail(400, { message: `Tran Item is required for ID ${c.id}.` });
@@ -262,6 +336,7 @@ export const actions: Actions = {
 					tranPrice: price,
 					tranAmount: amount,
 					tranRemark: c.tranRemark || undefined,
+					prodId: c.prodId ?? undefined,
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
 				})
