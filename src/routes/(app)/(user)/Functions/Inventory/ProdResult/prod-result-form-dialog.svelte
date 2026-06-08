@@ -4,7 +4,7 @@
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
-	import { TRAN_TYPE, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import type { CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
 	import XIcon from "@lucide/svelte/icons/x";
@@ -38,17 +38,10 @@
 		defaultDt = "",
 	}: Props = $props();
 
-	const title = $derived(mode === "create" ? "Add Inventory Transaction" : "Edit Inventory Transaction");
+	const title = $derived(mode === "create" ? "생산입고 추가" : "생산입고 편집");
 	const action = $derived(mode === "create" ? "?/create" : "?/update");
 
-	const tranTypeItems: CodeValue[] = $derived(TRAN_TYPE.list.filter((i) => i.opt2 === "1"));
 	const tranItemItems: CodeValue[] = $derived(itemInfo.list);
-
-	const tranAmount = $derived(() => {
-		const qty = tranQtyRaw ?? 0;
-		const price = tranPriceRaw ?? 0;
-		return qty * price;
-	});
 
 	const inputClasses = {
 		required: "border-amber-400 focus-visible:ring-amber-400 focus:ring-2 focus:ring-amber-400",
@@ -56,22 +49,12 @@
 	};
 
 	let documentDtStr = $state("");
-	let tranType = $state("");
 	let tranItem = $state("");
 	let tranQtyRaw = $state<number | null>(null);
 	let tranQtyDisplay = $state("");
-	let tranPriceRaw = $state<number | null>(null);
-	let tranPriceDisplay = $state("");
 
 	function focusField(field: string) {
-		if (field === "Tran_type") {
-			const btn = document.querySelector("#Tran_type button") as HTMLElement | null;
-			if (btn) {
-				btn.focus();
-				btn.style.outline = "2px solid #fbbf24";
-				btn.style.outlineOffset = "2px";
-			}
-		} else if (field === "Tran_item") {
+		if (field === "Tran_item") {
 			const btn = document.querySelector("#Tran_item button") as HTMLElement | null;
 			if (btn) {
 				btn.focus();
@@ -91,12 +74,6 @@
 			focusField("Document_dt");
 			return;
 		}
-		if (!tranType.trim()) {
-			e.preventDefault();
-			toast.error("Tran Type is required");
-			focusField("Tran_type");
-			return;
-		}
 		if (!tranItem.trim()) {
 			e.preventDefault();
 			toast.error("Tran Item is required");
@@ -111,12 +88,6 @@
 		}
 	}
 
-	$effect(() => {
-		if (tranType) {
-			const btn = document.querySelector("#Tran_type button") as HTMLElement | null;
-			if (btn) btn.style.outline = "";
-		}
-	});
 	$effect(() => {
 		if (tranItem) {
 			const btn = document.querySelector("#Tran_item button") as HTMLElement | null;
@@ -140,53 +111,19 @@
 		}
 	}
 
-	function onTranPriceInput(e: Event) {
-		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
-		tranPriceRaw = raw ? Number(raw) : null;
-		tranPriceDisplay = raw;
-	}
-
-	function onTranPriceBlur() {
-		if (tranPriceRaw !== null) {
-			const { decimalPlaces } = parseFormatPattern(formatQty);
-			tranPriceRaw = Number(tranPriceRaw.toFixed(decimalPlaces));
-			tranPriceDisplay = formatStdPrice(tranPriceRaw, formatQty);
-		} else {
-			tranPriceDisplay = "";
-		}
-	}
-
 	$effect(() => {
 		if (open) {
 			if (data) {
 				documentDtStr = data.documentDt;
-				tranType = data.tranType;
 				tranItem = data.tranItem;
 				const { decimalPlaces } = parseFormatPattern(formatQty);
 				tranQtyRaw = data.tranQty != null ? Number(Number(data.tranQty).toFixed(decimalPlaces)) : null;
 				tranQtyDisplay = data.tranQty != null ? formatStdPrice(data.tranQty, formatQty) : "";
-				tranPriceRaw = data.tranPrice != null ? Number(Number(data.tranPrice).toFixed(decimalPlaces)) : null;
-				tranPriceDisplay = data.tranPrice != null ? formatStdPrice(data.tranPrice, formatQty) : "";
 			} else {
 				documentDtStr = defaultDt;
-				tranType = "";
 				tranItem = "";
 				tranQtyRaw = null;
 				tranQtyDisplay = "";
-				tranPriceRaw = null;
-				tranPriceDisplay = "";
-			}
-		}
-	});
-
-	// Auto-fill stdPrice when item selected (create mode only)
-	$effect(() => {
-		if (mode === "create" && tranItem && itemInfo.list.length > 0) {
-			const item = itemInfo.list.find((i) => i.code === tranItem);
-			if (item?.stdPrice && item.stdPrice > 0 && tranPriceRaw === null) {
-				const { decimalPlaces } = parseFormatPattern(formatQty);
-				tranPriceRaw = Number(item.stdPrice.toFixed(decimalPlaces));
-				tranPriceDisplay = formatStdPrice(tranPriceRaw, formatQty);
 			}
 		}
 	});
@@ -198,8 +135,8 @@
 			<Dialog.Title>{title}</Dialog.Title>
 			<Dialog.Description>
 				{mode === "create"
-					? "Create a new inventory transaction."
-					: "Update inventory transaction details."}
+					? "새로운 생산입고 기록을 생성합니다."
+					: "생산입고 기록을 수정합니다."}
 			</Dialog.Description>
 		</Dialog.Header>
 		<form
@@ -231,16 +168,11 @@
 						class={inputClasses.required}
 					/>
 				</div>
-				<div class="grid gap-2 relative">
-					<Label for="Tran_type" class="font-medium text-amber-600 dark:text-amber-400">Tran Type *</Label>
-					<div id="Tran_type" class="relative rounded-md">
-						<input type="hidden" name="Tran_type" value={tranType} />
-						<SearchableSelect
-							items={tranTypeItems}
-							bind:value={tranType}
-							placeholder="Search tran type..."
-							class={inputClasses.required}
-						/>
+				<div class="grid gap-2">
+					<Label class="font-medium text-amber-600 dark:text-amber-400">Tran Type</Label>
+					<input type="hidden" name="Tran_type" value="R03" />
+					<div class="flex h-10 items-center rounded-md border border-muted-foreground/20 bg-muted/30 px-3 text-sm">
+						생산입고 (R03)
 					</div>
 				</div>
 				<div class="grid gap-2 relative">
@@ -267,25 +199,6 @@
 						onblur={onTranQtyBlur}
 						class={inputClasses.required}
 					/>
-				</div>
-				<div class="grid gap-2">
-					<Label for="Tran_price" class="font-medium text-amber-600 dark:text-amber-400">Tran Price</Label>
-					<input type="hidden" name="Tran_price" value={tranPriceRaw ?? ""} />
-					<Input
-						id="Tran_price"
-						type="text"
-						inputmode="decimal"
-						value={tranPriceDisplay}
-						oninput={onTranPriceInput}
-						onblur={onTranPriceBlur}
-						class={inputClasses.optional}
-					/>
-				</div>
-				<div class="grid gap-2">
-					<Label class="text-muted-foreground">Tran Amount</Label>
-					<div class="flex h-10 items-center rounded-md border border-muted-foreground/20 bg-muted/30 px-3 text-sm">
-						{formatStdPrice(tranAmount(), formatQty)}
-					</div>
 				</div>
 				<div class="grid gap-2">
 					<Label for="Tran_remark" class="text-muted-foreground">Tran Remark</Label>
