@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { db } from "./index.js";
-import { appSettings, menus, sessions, users, pages, notifications } from "./schema.js";
+import { appSettings, menus, sessions, users, pages, notifications, oauthAccounts, passwordResetTokens } from "./schema.js";
 import { sql } from "drizzle-orm";
 import { generateId } from "../id.js";
 
@@ -10,12 +10,14 @@ export async function seedDemo() {
 	// Temporarily disable FK checks to clear tables in any order
 	db.run(sql`PRAGMA foreign_keys = OFF`);
 
+	db.delete(appSettings).run();
 	db.delete(notifications).run();
 	db.delete(sessions).run();
 	db.delete(pages).run();
 	db.delete(menus).run();
 	db.delete(users).run();
-	db.delete(appSettings).run();
+	db.delete(oauthAccounts).run();
+	db.delete(passwordResetTokens).run();
 
 	db.run(sql`PRAGMA foreign_keys = ON`);
 

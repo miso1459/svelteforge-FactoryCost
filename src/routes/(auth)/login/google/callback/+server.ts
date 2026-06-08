@@ -8,7 +8,7 @@ import {
 	setSessionCookie,
 	generateId,
 } from "$lib/server/auth.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
 import type { RequestHandler } from "./$types.js";
 
@@ -75,6 +75,8 @@ export const GET: RequestHandler = async ({ url, cookies, request, getClientAddr
 	}
 
 	// New user — create user + oauth account + session
+	const [userCount] = await db.select({ count: count() }).from(users);
+	const isFirstUser = userCount.count === 0;
 	const userId = generateId(10);
 	const emailPrefix = googleUser.email
 		.split("@")[0]
@@ -100,7 +102,7 @@ export const GET: RequestHandler = async ({ url, cookies, request, getClientAddr
 			passwordHash,
 			name: googleUser.name || emailPrefix,
 			avatarUrl: googleUser.picture || null,
-			role: "guest",
+			role: isFirstUser ? "admin" : "guest",
 		});
 	} catch {
 		// Username or email conflict — try to link to existing user by email

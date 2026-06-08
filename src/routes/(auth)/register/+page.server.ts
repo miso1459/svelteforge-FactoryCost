@@ -8,6 +8,7 @@ import { db } from "$lib/server/db/index.js";
 import { users } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { hash } from "@node-rs/argon2";
+import { count } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -50,6 +51,8 @@ export const actions: Actions = {
 			parallelism: 1,
 		});
 
+		const [userCount] = await db.select({ count: count() }).from(users);
+		const role = userCount.count === 0 ? "admin" : "guest";
 		const userId = generateId(10);
 
 		try {
@@ -59,7 +62,7 @@ export const actions: Actions = {
 				username: username.toLowerCase(),
 				passwordHash,
 				name,
-				role: "admin", // First user gets admin role
+				role,
 			});
 		} catch {
 			return fail(400, { message: "Username or email already taken" });

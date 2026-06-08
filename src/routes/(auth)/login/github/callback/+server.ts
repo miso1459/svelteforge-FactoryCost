@@ -8,7 +8,7 @@ import {
 	setSessionCookie,
 	generateId,
 } from "$lib/server/auth.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
 import type { RequestHandler } from "./$types.js";
 
@@ -103,6 +103,8 @@ export const GET: RequestHandler = async ({ url, cookies, request, getClientAddr
 	}
 
 	// New user
+	const [userCount] = await db.select({ count: count() }).from(users);
+	const isFirstUser = userCount.count === 0;
 	const userId = generateId(10);
 	const rawUsername = githubUser.login
 		.toLowerCase()
@@ -126,7 +128,7 @@ export const GET: RequestHandler = async ({ url, cookies, request, getClientAddr
 			passwordHash,
 			name: githubUser.name || githubUser.login,
 			avatarUrl: githubUser.avatar_url || null,
-			role: "guest",
+			role: isFirstUser ? "admin" : "guest",
 		});
 	} catch {
 		// Username or email conflict — link to existing user by email
