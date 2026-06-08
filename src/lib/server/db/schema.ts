@@ -224,6 +224,23 @@ export type NewTemplate03 = typeof template03.$inferInsert;
 export type Menu = typeof menus.$inferSelect;
 export type NewMenu = typeof menus.$inferInsert;
 
+export const invTran = sqliteTable("Inv_Tran", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	documentDt: integer("Document_dt", { mode: "timestamp" }).notNull(),
+	tranType: text("Tran_type").notNull(),
+	tranItem: text("Tran_item").notNull(),
+	tranQty: real("tran_qty").notNull().default(0),
+	tranRemark: text("tran_remark"),
+	createdBy: text("created_by").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.$defaultFn(() => new Date()),
+});
+
 export const masterBOM = sqliteTable("Master_BOM", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	BOM_item_parent: text("BOM_item_parent"),         // 부모 품목코드 (ITEM_ACCT IN ('10','20')), null = 최상위
@@ -244,3 +261,6 @@ export const masterBOM = sqliteTable("Master_BOM", {
 
 export type MasterBOM = typeof masterBOM.$inferSelect;
 export type NewMasterBOM = typeof masterBOM.$inferInsert;
+
+export type InvTran = typeof invTran.$inferSelect;
+export type NewInvTran = typeof invTran.$inferInsert;
