@@ -128,6 +128,19 @@ export async function seedDemo() {
 			isActive: true,
 			prompt: null,
 		},
+		{
+			id: generateId(10),
+			type: "link" as const,
+			name: "생산입고",
+			desc: "생산입고 관리 (R03 사용자 등록, I01 자동 생성)",
+			path: "/Functions/Inventory/ProdResult",
+			icon: null,
+			role: '["admin","editor"]',
+			sortOrder: 3,
+			parentId: inventoryFolderId,
+			isActive: true,
+			prompt: null,
+		},
 	];
 
 	for (const m of menuData) {
