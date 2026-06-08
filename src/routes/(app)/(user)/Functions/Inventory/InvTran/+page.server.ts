@@ -49,6 +49,7 @@ export const actions: Actions = {
 		const tranType = formData.get("Tran_type");
 		const tranItem = formData.get("Tran_item");
 		const tranQty = formData.get("Tran_qty");
+		const tranPrice = formData.get("Tran_price");
 		const tranRemark = formData.get("Tran_remark");
 
 		if (typeof documentDtStr !== "string" || !documentDtStr.trim()) {
@@ -73,11 +74,17 @@ export const actions: Actions = {
 		});
 		const fmt = fmtSetting?.value ?? "#,##0.00";
 
+		const qty = roundByFormat(Number(tranQty), fmt) ?? 0;
+		const price = roundByFormat(Number(tranPrice) || 0, fmt) ?? 0;
+		const amount = roundByFormat(qty * price, fmt) ?? 0;
+
 		await db.insert(invTran).values({
 			documentDt,
 			tranType,
 			tranItem,
-			tranQty: roundByFormat(Number(tranQty), fmt) ?? 0,
+			tranQty: qty,
+			tranPrice: price,
+			tranAmount: amount,
 			tranRemark: typeof tranRemark === "string" && tranRemark.trim() ? tranRemark : null,
 			createdBy: userName,
 			createdAt: now,
@@ -97,6 +104,7 @@ export const actions: Actions = {
 		const tranType = formData.get("Tran_type");
 		const tranItem = formData.get("Tran_item");
 		const tranQty = formData.get("Tran_qty");
+		const tranPrice = formData.get("Tran_price");
 		const tranRemark = formData.get("Tran_remark");
 
 		const id = Number(idStr);
@@ -123,13 +131,19 @@ export const actions: Actions = {
 		});
 		const fmt = fmtSetting?.value ?? "#,##0.00";
 
+		const qty = roundByFormat(Number(tranQty), fmt) ?? 0;
+		const price = roundByFormat(Number(tranPrice) || 0, fmt) ?? 0;
+		const amount = roundByFormat(qty * price, fmt) ?? 0;
+
 		await db
 			.update(invTran)
 			.set({
 				documentDt,
 				tranType,
 				tranItem,
-				tranQty: roundByFormat(Number(tranQty), fmt) ?? 0,
+				tranQty: qty,
+				tranPrice: price,
+				tranAmount: amount,
 				tranRemark: typeof tranRemark === "string" && tranRemark.trim() ? tranRemark : null,
 				updatedBy: locals.user.name,
 				updatedAt: new Date(),
@@ -197,6 +211,7 @@ export const actions: Actions = {
 			tranType: string | null;
 			tranItem: string | null;
 			tranQty: number;
+			tranPrice: number;
 			tranRemark: string | null;
 		};
 		let changes: ChangeItem[];
@@ -222,6 +237,9 @@ export const actions: Actions = {
 			if (c.tranQty == null || isNaN(c.tranQty) || c.tranQty === 0) {
 				return fail(400, { message: `Tran Qty must be a non-zero number for ID ${c.id}.` });
 			}
+			if (c.tranPrice == null || isNaN(c.tranPrice)) {
+				return fail(400, { message: `Tran Price is required for ID ${c.id}.` });
+			}
 		}
 
 		const fmtSetting = await db.query.appSettings.findFirst({
@@ -230,13 +248,18 @@ export const actions: Actions = {
 		const fmt = fmtSetting?.value ?? "#,##0.00";
 
 		for (const c of changes) {
+			const qty = roundByFormat(c.tranQty, fmt) ?? 0;
+			const price = roundByFormat(c.tranPrice, fmt) ?? 0;
+			const amount = roundByFormat(qty * price, fmt) ?? 0;
 			await db
 				.update(invTran)
 				.set({
 					documentDt: new Date(c.documentDt + "T00:00:00"),
 					tranType: c.tranType ?? undefined,
 					tranItem: c.tranItem ?? undefined,
-					tranQty: roundByFormat(c.tranQty, fmt) ?? 0,
+					tranQty: qty,
+					tranPrice: price,
+					tranAmount: amount,
 					tranRemark: c.tranRemark || undefined,
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),

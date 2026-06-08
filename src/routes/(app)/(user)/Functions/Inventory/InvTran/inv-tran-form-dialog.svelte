@@ -20,10 +20,12 @@
 			tranType: string;
 			tranItem: string;
 			tranQty: number | null;
+			tranPrice: number | null;
+			tranAmount: number | null;
 			tranRemark: string | null;
 		} | null;
 		formatQty?: string;
-		itemInfo?: { title: string; list: { code: string; value: string }[] };
+		itemInfo?: { title: string; list: { code: string; value: string; stdPrice?: number }[] };
 		defaultDt?: string;
 	};
 
@@ -42,6 +44,12 @@
 	const tranTypeItems: CodeValue[] = $derived(TRAN_TYPE.list.filter((i) => i.opt2 === "1"));
 	const tranItemItems: CodeValue[] = $derived(itemInfo.list);
 
+	const tranAmount = $derived(() => {
+		const qty = tranQtyRaw ?? 0;
+		const price = tranPriceRaw ?? 0;
+		return qty * price;
+	});
+
 	const inputClasses = {
 		required: "border-amber-400 focus-visible:ring-amber-400 focus:ring-2 focus:ring-amber-400",
 		optional: "border-muted-foreground/20 focus-visible:ring-muted-foreground/40 focus:ring-2 focus:ring-muted-foreground/40",
@@ -52,6 +60,8 @@
 	let tranItem = $state("");
 	let tranQtyRaw = $state<number | null>(null);
 	let tranQtyDisplay = $state("");
+	let tranPriceRaw = $state<number | null>(null);
+	let tranPriceDisplay = $state("");
 
 	function focusField(field: string) {
 		if (field === "Tran_type") {
@@ -130,6 +140,22 @@
 		}
 	}
 
+	function onTranPriceInput(e: Event) {
+		const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+		tranPriceRaw = raw ? Number(raw) : null;
+		tranPriceDisplay = raw;
+	}
+
+	function onTranPriceBlur() {
+		if (tranPriceRaw !== null) {
+			const { decimalPlaces } = parseFormatPattern(formatQty);
+			tranPriceRaw = Number(tranPriceRaw.toFixed(decimalPlaces));
+			tranPriceDisplay = formatStdPrice(tranPriceRaw, formatQty);
+		} else {
+			tranPriceDisplay = "";
+		}
+	}
+
 	$effect(() => {
 		if (open) {
 			if (data) {
@@ -139,12 +165,28 @@
 				const { decimalPlaces } = parseFormatPattern(formatQty);
 				tranQtyRaw = data.tranQty != null ? Number(Number(data.tranQty).toFixed(decimalPlaces)) : null;
 				tranQtyDisplay = data.tranQty != null ? formatStdPrice(data.tranQty, formatQty) : "";
+				tranPriceRaw = data.tranPrice != null ? Number(Number(data.tranPrice).toFixed(decimalPlaces)) : null;
+				tranPriceDisplay = data.tranPrice != null ? formatStdPrice(data.tranPrice, formatQty) : "";
 			} else {
 				documentDtStr = defaultDt;
 				tranType = "";
 				tranItem = "";
 				tranQtyRaw = null;
 				tranQtyDisplay = "";
+				tranPriceRaw = null;
+				tranPriceDisplay = "";
+			}
+		}
+	});
+
+	// Auto-fill stdPrice when item selected (create mode only)
+	$effect(() => {
+		if (mode === "create" && tranItem && itemInfo.list.length > 0) {
+			const item = itemInfo.list.find((i) => i.code === tranItem);
+			if (item?.stdPrice && item.stdPrice > 0 && tranPriceRaw === null) {
+				const { decimalPlaces } = parseFormatPattern(formatQty);
+				tranPriceRaw = Number(item.stdPrice.toFixed(decimalPlaces));
+				tranPriceDisplay = formatStdPrice(tranPriceRaw, formatQty);
 			}
 		}
 	});
@@ -225,6 +267,25 @@
 						onblur={onTranQtyBlur}
 						class={inputClasses.required}
 					/>
+				</div>
+				<div class="grid gap-2">
+					<Label for="Tran_price" class="font-medium text-amber-600 dark:text-amber-400">Tran Price</Label>
+					<input type="hidden" name="Tran_price" value={tranPriceRaw ?? ""} />
+					<Input
+						id="Tran_price"
+						type="text"
+						inputmode="decimal"
+						value={tranPriceDisplay}
+						oninput={onTranPriceInput}
+						onblur={onTranPriceBlur}
+						class={inputClasses.optional}
+					/>
+				</div>
+				<div class="grid gap-2">
+					<Label class="text-muted-foreground">Tran Amount</Label>
+					<div class="flex h-10 items-center rounded-md border border-muted-foreground/20 bg-muted/30 px-3 text-sm">
+						{formatStdPrice(tranAmount(), formatQty)}
+					</div>
 				</div>
 				<div class="grid gap-2">
 					<Label for="Tran_remark" class="text-muted-foreground">Tran Remark</Label>

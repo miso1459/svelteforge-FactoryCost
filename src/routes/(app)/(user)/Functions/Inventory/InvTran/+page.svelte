@@ -65,11 +65,13 @@
 		tranType: string;
 		tranItem: string;
 		tranQty: number | null;
+		tranPrice: number | null;
 		tranRemark: string;
 	}>>({});
 	const hasChanges = $derived(Object.keys(changes).length > 0);
 
 	let qtyDisplays = $state<Record<number, string>>({});
+	let priceDisplays = $state<Record<number, string>>({});
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function updateInlineChange(id: number, field: string, value: any) {
@@ -82,6 +84,7 @@
 				tranType: original.tranType,
 				tranItem: original.tranItem,
 				tranQty: original.tranQty,
+				tranPrice: original.tranPrice,
 				tranRemark: original.tranRemark ?? "",
 			};
 		}
@@ -90,6 +93,7 @@
 		if (field === "tranType") changes[id].tranType = value;
 		if (field === "tranItem") changes[id].tranItem = value;
 		if (field === "tranQty") changes[id].tranQty = value === "" || value === null ? null : parseFloat(value) || 0;
+		if (field === "tranPrice") changes[id].tranPrice = value === "" || value === null ? null : parseFloat(value) || 0;
 		if (field === "tranRemark") changes[id].tranRemark = value;
 
 		// Remove if back to original
@@ -100,6 +104,7 @@
 			c.tranType === original.tranType &&
 			c.tranItem === original.tranItem &&
 			c.tranQty === original.tranQty &&
+			c.tranPrice === original.tranPrice &&
 			c.tranRemark === (original.tranRemark ?? "");
 
 		if (isSame) {
@@ -112,6 +117,7 @@
 	function revertAllChanges() {
 		changes = {};
 		qtyDisplays = {};
+		priceDisplays = {};
 		toast.success("All changes reverted.");
 	}
 
@@ -159,6 +165,8 @@
 				r.tranType.toLowerCase().includes(search.toLowerCase()) ||
 				r.tranItem.toLowerCase().includes(search.toLowerCase()) ||
 				String(r.tranQty).includes(search) ||
+				String(r.tranPrice).includes(search) ||
+				String(r.tranAmount).includes(search) ||
 				(r.tranRemark ?? "").toLowerCase().includes(search.toLowerCase()) ||
 				tranTypeLabel(r.tranType).toLowerCase().includes(search.toLowerCase()) ||
 				dateSearchStrings(r.documentDt).some((s) => s.includes(search))
@@ -284,6 +292,8 @@
 			tranType: tranTypeLabel(r.tranType),
 			tranItem: r.tranItem,
 			tranQty: r.tranQty,
+			tranPrice: r.tranPrice,
+			tranAmount: r.tranAmount,
 			tranRemark: r.tranRemark ?? "",
 		}));
 		if (format === "csv") exportToCSV(exportData, "Inv_Tran");
@@ -295,6 +305,8 @@
 		{ key: "tranType", label: "Tran Type" },
 		{ key: "tranItem", label: "Tran Item" },
 		{ key: "tranQty", label: "Tran Qty" },
+		{ key: "tranPrice", label: "Tran Price" },
+		{ key: "tranAmount", label: "Tran Amount" },
 		{ key: "tranRemark", label: "Tran Remark" },
 	];
 </script>
@@ -315,8 +327,8 @@
 					<UndoIcon class="mr-2 size-4" />
 					Cancel
 				</Button>
-				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; qtyDisplays = {}; } else if (result.type === "failure") { const errData = result.data as { message?: string; field?: string; id?: number } | undefined; if (errData?.message) toast.error(errData.message); if (errData?.field && errData?.id !== undefined) { focusField(errData.field, errData.id); } } await update(); }; }}>
-					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), documentDt: val.documentDt || null, tranType: val.tranType || null, tranItem: val.tranItem || null, tranQty: val.tranQty, tranRemark: val.tranRemark || null })))} />
+				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; qtyDisplays = {}; priceDisplays = {}; } else if (result.type === "failure") { const errData = result.data as { message?: string; field?: string; id?: number } | undefined; if (errData?.message) toast.error(errData.message); if (errData?.field && errData?.id !== undefined) { focusField(errData.field, errData.id); } } await update(); }; }}>
+					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), documentDt: val.documentDt || null, tranType: val.tranType || null, tranItem: val.tranItem || null, tranQty: val.tranQty, tranPrice: val.tranPrice, tranRemark: val.tranRemark || null })))} />
 					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
 						<SaveIcon class="mr-2 size-4" />
 						Save
@@ -476,6 +488,30 @@
 							</div>
 						</Table.Cell>
 						<Table.Cell>
+							<div class="w-28" id="tranPrice-{record.id}">
+								<Input
+									type="text"
+									inputmode="decimal"
+									value={priceDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranPrice ?? record.tranPrice, data.formatQty)}
+									oninput={(e) => {
+										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+										priceDisplays[record.id] = raw;
+										updateInlineChange(record.id, "tranPrice", raw === "" ? null : raw);
+									}}
+									onblur={() => {
+										const val = changes[record.id]?.tranPrice ?? record.tranPrice;
+										priceDisplays[record.id] = formatStdPrice(val, data.formatQty);
+									}}
+									class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
+						<Table.Cell class="text-right">
+							<span class="text-xs text-muted-foreground">
+								{formatStdPrice((changes[record.id]?.tranQty ?? record.tranQty) * (changes[record.id]?.tranPrice ?? record.tranPrice), data.formatQty)}
+							</span>
+						</Table.Cell>
+						<Table.Cell>
 							<div class="w-48">
 								<Textarea
 									value={changes[record.id]?.tranRemark ?? record.tranRemark ?? ""}
@@ -504,7 +540,7 @@
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={8} class="h-24 text-center">
+						<Table.Cell colspan={9} class="h-24 text-center">
 							{search || fromDate || toDate ? "No records match your filters." : "No records found."}
 						</Table.Cell>
 					</Table.Row>

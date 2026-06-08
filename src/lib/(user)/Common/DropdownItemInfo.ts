@@ -11,6 +11,7 @@ import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 export type CodeValue = {
   code: string;
   value: string;
+  stdPrice?: number;
 };
 
 export type CodeValueGroup = {
@@ -55,6 +56,7 @@ export async function getItemInfo(): Promise<CodeValueGroup> {
         padField(r.itemDesc) +
         padField(r.itemSpec ?? "") +
         padField(r.itemUnit ?? ""),
+      stdPrice: r.stdPrice ?? 0,
     })),
   };
 }
