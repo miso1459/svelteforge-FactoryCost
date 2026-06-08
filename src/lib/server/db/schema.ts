@@ -233,6 +233,7 @@ export const invTran = sqliteTable("Inv_Tran", {
 	tranPrice: real("Tran_price").notNull().default(0),
 	tranAmount: real("Tran_amount").notNull().default(0),
 	tranRemark: text("Tran_remark"),
+	prodId: text("Prod_id"),
 	createdBy: text("created_by").notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()

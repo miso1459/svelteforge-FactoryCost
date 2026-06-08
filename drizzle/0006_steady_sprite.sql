@@ -1,0 +1,1 @@
+ALTER TABLE `Inv_Tran` ADD `Prod_id` text;
