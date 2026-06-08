@@ -23,7 +23,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Database
-*.db
+#*.db
 *.db-journal
 *.db-wal
 *.db-shm

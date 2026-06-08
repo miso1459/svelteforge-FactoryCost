@@ -229,8 +229,8 @@ export const invTran = sqliteTable("Inv_Tran", {
 	documentDt: integer("Document_dt", { mode: "timestamp" }).notNull(),
 	tranType: text("Tran_type").notNull(),
 	tranItem: text("Tran_item").notNull(),
-	tranQty: real("tran_qty").notNull().default(0),
-	tranRemark: text("tran_remark"),
+	tranQty: real("Tran_qty").notNull().default(0),
+	tranRemark: text("Tran_remark"),
 	createdBy: text("created_by").notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()

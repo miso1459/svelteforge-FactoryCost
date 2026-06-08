@@ -130,7 +130,7 @@
 		return item ? item.value : code;
 	}
 
-	const tranTypeItems = $derived(TRAN_TYPE.list);
+	const tranTypeItems = $derived(TRAN_TYPE.list.filter((i) => i.opt2 === "1"));
 	const tranItemItems = $derived(data.itemInfo.list);
 
 	const dateFiltered = $derived(() => {

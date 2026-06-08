@@ -39,7 +39,7 @@
 	const title = $derived(mode === "create" ? "Add Inventory Transaction" : "Edit Inventory Transaction");
 	const action = $derived(mode === "create" ? "?/create" : "?/update");
 
-	const tranTypeItems: CodeValue[] = $derived(TRAN_TYPE.list);
+	const tranTypeItems: CodeValue[] = $derived(TRAN_TYPE.list.filter((i) => i.opt2 === "1"));
 	const tranItemItems: CodeValue[] = $derived(itemInfo.list);
 
 	const inputClasses = {
