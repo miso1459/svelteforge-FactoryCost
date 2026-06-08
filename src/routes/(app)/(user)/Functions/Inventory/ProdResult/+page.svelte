@@ -5,7 +5,7 @@
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import DataTablePagination from "$lib/components/data-table-pagination.svelte";
-	import InvTranFormDialog from "./inv-tran-form-dialog.svelte";
+	import ProdResultFormDialog from "./prod-result-form-dialog.svelte";
 	import DeleteConfirmDialog from "$lib/components/delete-confirm-dialog.svelte";
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import TrashIcon from "@lucide/svelte/icons/trash-2";
@@ -24,7 +24,7 @@
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
-	import { TRAN_TYPE, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import { TRAN_TYPE } from "$lib/(user)/Common/DropdownLists.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { formatStdPrice } from "$lib/utils/format.js";
 
@@ -65,13 +65,11 @@
 		tranType: string;
 		tranItem: string;
 		tranQty: number | null;
-		tranPrice: number | null;
 		tranRemark: string;
 	}>>({});
 	const hasChanges = $derived(Object.keys(changes).length > 0);
 
 	let qtyDisplays = $state<Record<number, string>>({});
-	let priceDisplays = $state<Record<number, string>>({});
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function updateInlineChange(id: number, field: string, value: any) {
@@ -84,7 +82,6 @@
 				tranType: original.tranType,
 				tranItem: original.tranItem,
 				tranQty: original.tranQty,
-				tranPrice: original.tranPrice,
 				tranRemark: original.tranRemark ?? "",
 			};
 		}
@@ -93,7 +90,6 @@
 		if (field === "tranType") changes[id].tranType = value;
 		if (field === "tranItem") changes[id].tranItem = value;
 		if (field === "tranQty") changes[id].tranQty = value === "" || value === null ? null : parseFloat(value) || 0;
-		if (field === "tranPrice") changes[id].tranPrice = value === "" || value === null ? null : parseFloat(value) || 0;
 		if (field === "tranRemark") changes[id].tranRemark = value;
 
 		// Remove if back to original
@@ -104,7 +100,6 @@
 			c.tranType === original.tranType &&
 			c.tranItem === original.tranItem &&
 			c.tranQty === original.tranQty &&
-			c.tranPrice === original.tranPrice &&
 			c.tranRemark === (original.tranRemark ?? "");
 
 		if (isSame) {
@@ -117,7 +112,6 @@
 	function revertAllChanges() {
 		changes = {};
 		qtyDisplays = {};
-		priceDisplays = {};
 		toast.success("All changes reverted.");
 	}
 
@@ -178,8 +172,6 @@
 				r.tranType.toLowerCase().includes(search.toLowerCase()) ||
 				r.tranItem.toLowerCase().includes(search.toLowerCase()) ||
 				String(r.tranQty).includes(search) ||
-				String(r.tranPrice).includes(search) ||
-				String(r.tranAmount).includes(search) ||
 				(r.tranRemark ?? "").toLowerCase().includes(search.toLowerCase()) ||
 				tranTypeLabel(r.tranType).toLowerCase().includes(search.toLowerCase()) ||
 				dateSearchStrings(r.documentDt).some((s) => s.includes(search))
@@ -305,12 +297,10 @@
 			tranType: tranTypeLabel(r.tranType),
 			tranItem: r.tranItem,
 			tranQty: r.tranQty,
-			tranPrice: r.tranPrice,
-			tranAmount: r.tranAmount,
 			tranRemark: r.tranRemark ?? "",
 		}));
-		if (format === "csv") exportToCSV(exportData, "Inv_Tran");
-		else exportToJSON(exportData, "Inv_Tran");
+		if (format === "csv") exportToCSV(exportData, "ProdResult");
+		else exportToJSON(exportData, "ProdResult");
 	}
 
 	const columns = [
@@ -318,21 +308,19 @@
 		{ key: "tranType", label: "Tran Type" },
 		{ key: "tranItem", label: "Tran Item" },
 		{ key: "tranQty", label: "Tran Qty" },
-		{ key: "tranPrice", label: "Tran Price" },
-		{ key: "tranAmount", label: "Tran Amount" },
 		{ key: "tranRemark", label: "Tran Remark" },
 	];
 </script>
 
 <svelte:head>
-	<title>Inv Tran - SvelteForge Factory Cost</title>
+	<title>생산입고 - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Inv Tran"}</h1>
-			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "Manage inventory transactions."}</p>
+			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "생산입고"}</h1>
+			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "생산입고 관리 (R03 사용자 등록, I01 자동 생성)"}</p>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if hasChanges}
@@ -340,8 +328,8 @@
 					<UndoIcon class="mr-2 size-4" />
 					Cancel
 				</Button>
-				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; qtyDisplays = {}; priceDisplays = {}; } else if (result.type === "failure") { const errData = result.data as { message?: string; field?: string; id?: number } | undefined; if (errData?.message) toast.error(errData.message); if (errData?.field && errData?.id !== undefined) { focusField(errData.field, errData.id); } } await update(); }; }}>
-					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), documentDt: val.documentDt || null, tranType: val.tranType || null, tranItem: val.tranItem || null, tranQty: val.tranQty, tranPrice: val.tranPrice, tranRemark: val.tranRemark || null })))} />
+				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; qtyDisplays = {}; } else if (result.type === "failure") { const errData = result.data as { message?: string; field?: string; id?: number } | undefined; if (errData?.message) toast.error(errData.message); if (errData?.field && errData?.id !== undefined) { focusField(errData.field, errData.id); } } await update(); }; }}>
+					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), documentDt: val.documentDt || null, tranType: val.tranType || null, tranItem: val.tranItem || null, tranQty: val.tranQty, tranRemark: val.tranRemark || null })))} />
 					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
 						<SaveIcon class="mr-2 size-4" />
 						Save
@@ -350,7 +338,7 @@
 			{/if}
 			<Button onclick={() => (createOpen = true)}>
 				<PlusIcon class="mr-2 size-4" />
-				Add Tran
+				생산입고 추가
 			</Button>
 		</div>
 	</div>
@@ -438,6 +426,7 @@
 				{#each paginated as record (record.id)}
 					{@const rid = String(record.id)}
 					{@const isModified = Boolean(changes[record.id])}
+					{@const isEditable = record.tranType === 'R03'}
 					<Table.Row class={[
 						selectedIds.has(rid) ? 'bg-muted/50' : '',
 						isModified ? 'bg-amber-500/10 dark:bg-amber-500/20' : '',
@@ -449,90 +438,89 @@
 								checked={selectedIds.has(rid)}
 								onchange={() => toggleSelect(rid)}
 								class="accent-primary size-4"
+								disabled={!isEditable}
 							/>
 						</Table.Cell>
 						<Table.Cell class="font-medium">
 							<div class="w-36" id="documentDt-{record.id}">
-								<Input
-									type="date"
-									value={changes[record.id]?.documentDt ?? (record.documentDt ? new Date(record.documentDt).toISOString().slice(0, 10) : "")}
-									oninput={(e) => updateInlineChange(record.id, "documentDt", (e.target as HTMLInputElement).value)}
-									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
-								/>
+								{#if isEditable}
+									<Input
+										type="date"
+										value={changes[record.id]?.documentDt ?? (record.documentDt ? new Date(record.documentDt).toISOString().slice(0, 10) : "")}
+										oninput={(e) => updateInlineChange(record.id, "documentDt", (e.target as HTMLInputElement).value)}
+										class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+									/>
+								{:else}
+									<span class="text-xs py-1 px-2 block h-8 leading-6">
+										{record.documentDt ? new Date(record.documentDt).toISOString().slice(0, 10) : "—"}
+									</span>
+								{/if}
 							</div>
 						</Table.Cell>
 						<Table.Cell>
 							<div class="w-36" id="tranType-{record.id}">
-								<SearchableSelect
-									items={tranTypeItems}
-									bind:value={() => changes[record.id]?.tranType ?? record.tranType, (v) => updateInlineChange(record.id, "tranType", v)}
-									placeholder="Select type..."
-									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
-								/>
+								{#if isEditable}
+									<SearchableSelect
+										items={tranTypeItems}
+										bind:value={() => changes[record.id]?.tranType ?? record.tranType, (v) => updateInlineChange(record.id, "tranType", v)}
+										placeholder="Select type..."
+										class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+									/>
+								{:else}
+									<span class="text-xs py-1 px-2 block h-8 leading-6">{tranTypeLabel(record.tranType)}</span>
+								{/if}
 							</div>
 						</Table.Cell>
 						<Table.Cell>
 							<div class="w-48" id="tranItem-{record.id}">
-								<SearchableSelect
-									items={getTranItemItemsWithCurrent(record.tranItem)}
-									bind:value={() => changes[record.id]?.tranItem ?? record.tranItem, (v) => updateInlineChange(record.id, "tranItem", v)}
-									placeholder="Select item..."
-									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
-								/>
+								{#if isEditable}
+									<SearchableSelect
+										items={getTranItemItemsWithCurrent(record.tranItem)}
+										bind:value={() => changes[record.id]?.tranItem ?? record.tranItem, (v) => updateInlineChange(record.id, "tranItem", v)}
+										placeholder="Select item..."
+										class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+									/>
+								{:else}
+									<span class="text-xs py-1 px-2 block h-8 leading-6">{record.tranItem}</span>
+								{/if}
 							</div>
 						</Table.Cell>
 						<Table.Cell>
 							<div class="w-28" id="tranQty-{record.id}">
-								<Input
-									type="text"
-									inputmode="decimal"
-									value={qtyDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranQty ?? record.tranQty, data.formatQty)}
-									oninput={(e) => {
-										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
-										qtyDisplays[record.id] = raw;
-										updateInlineChange(record.id, "tranQty", raw === "" ? null : raw);
-									}}
-									onblur={() => {
-										const val = changes[record.id]?.tranQty ?? record.tranQty;
-										qtyDisplays[record.id] = formatStdPrice(val, data.formatQty);
-									}}
-									class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
-								/>
+								{#if isEditable}
+									<Input
+										type="text"
+										inputmode="decimal"
+										value={qtyDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranQty ?? record.tranQty, data.formatQty)}
+										oninput={(e) => {
+											const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
+											qtyDisplays[record.id] = raw;
+											updateInlineChange(record.id, "tranQty", raw === "" ? null : raw);
+										}}
+										onblur={() => {
+											const val = changes[record.id]?.tranQty ?? record.tranQty;
+											qtyDisplays[record.id] = formatStdPrice(val, data.formatQty);
+										}}
+										class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
+									/>
+								{:else}
+									<span class="text-xs py-1 px-2 block h-8 leading-6 text-right">{formatStdPrice(record.tranQty, data.formatQty)}</span>
+								{/if}
 							</div>
-						</Table.Cell>
-						<Table.Cell>
-							<div class="w-28" id="tranPrice-{record.id}">
-								<Input
-									type="text"
-									inputmode="decimal"
-									value={priceDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranPrice ?? record.tranPrice, data.formatQty)}
-									oninput={(e) => {
-										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
-										priceDisplays[record.id] = raw;
-										updateInlineChange(record.id, "tranPrice", raw === "" ? null : raw);
-									}}
-									onblur={() => {
-										const val = changes[record.id]?.tranPrice ?? record.tranPrice;
-										priceDisplays[record.id] = formatStdPrice(val, data.formatQty);
-									}}
-									class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
-								/>
-							</div>
-						</Table.Cell>
-						<Table.Cell class="text-right">
-							<span class="text-xs text-muted-foreground">
-								{formatStdPrice((changes[record.id]?.tranQty ?? record.tranQty) * (changes[record.id]?.tranPrice ?? record.tranPrice), data.formatQty)}
-							</span>
 						</Table.Cell>
 						<Table.Cell>
 							<div class="w-48">
-								<Textarea
-									value={changes[record.id]?.tranRemark ?? record.tranRemark ?? ""}
-									oninput={(e) => updateInlineChange(record.id, "tranRemark", (e.target as HTMLTextAreaElement).value)}
-									placeholder="—"
-									class="text-xs min-h-[2rem] border-muted-foreground/20 focus-visible:ring-muted-foreground/40"
-									rows={1}
-								/>
+								{#if isEditable}
+									<Textarea
+										value={changes[record.id]?.tranRemark ?? record.tranRemark ?? ""}
+										oninput={(e) => updateInlineChange(record.id, "tranRemark", (e.target as HTMLTextAreaElement).value)}
+										placeholder="—"
+										class="text-xs min-h-[2rem] border-muted-foreground/20 focus-visible:ring-muted-foreground/40"
+										rows={1}
+									/>
+								{:else}
+									<span class="text-xs py-1 px-2 block min-h-[2rem] leading-6">{record.tranRemark ?? "—"}</span>
+								{/if}
 							</div>
 						</Table.Cell>
 						<Table.Cell class="sticky right-0 z-[1] bg-background">
@@ -545,6 +533,7 @@
 									size="icon"
 									class="text-destructive size-8"
 									onclick={() => openDelete(record.id)}
+									disabled={!isEditable}
 								>
 									<TrashIcon class="size-4" />
 								</Button>
@@ -553,7 +542,7 @@
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={9} class="h-24 text-center">
+						<Table.Cell colspan={7} class="h-24 text-center">
 							{search || fromDate || toDate ? "No records match your filters." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
@@ -564,7 +553,7 @@
 	</div>
 </div>
 
-<InvTranFormDialog bind:open={createOpen} mode="create" formatQty={data.formatQty} itemInfo={data.itemInfo} defaultDt={toDate} />
+<ProdResultFormDialog bind:open={createOpen} mode="create" formatQty={data.formatQty} itemInfo={data.itemInfo} defaultDt={toDate} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
 
 <Dialog.Root bind:open={auditOpen}>
