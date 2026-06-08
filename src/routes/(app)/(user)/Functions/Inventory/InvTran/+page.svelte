@@ -24,7 +24,8 @@
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
-	import { TRAN_TYPE } from "$lib/(user)/Common/DropdownLists.js";
+	import { TRAN_TYPE, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
+	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { formatStdPrice } from "$lib/utils/format.js";
 
 	let { data, form } = $props();
@@ -59,7 +60,13 @@
 	let selectedIds = $state(new Set<string>());
 
 	// ── Inline Edit State ────────────────────────────────────────────────────
-	let changes = $state<Record<number, { tranQty: number | null; tranRemark: string }>>({});
+	let changes = $state<Record<number, {
+		documentDt: string;
+		tranType: string;
+		tranItem: string;
+		tranQty: number | null;
+		tranRemark: string;
+	}>>({});
 	const hasChanges = $derived(Object.keys(changes).length > 0);
 
 	let qtyDisplays = $state<Record<number, string>>({});
@@ -71,17 +78,27 @@
 
 		if (!changes[id]) {
 			changes[id] = {
+				documentDt: original.documentDt ? new Date(original.documentDt).toISOString().slice(0, 10) : "",
+				tranType: original.tranType,
+				tranItem: original.tranItem,
 				tranQty: original.tranQty,
 				tranRemark: original.tranRemark ?? "",
 			};
 		}
 
+		if (field === "documentDt") changes[id].documentDt = value;
+		if (field === "tranType") changes[id].tranType = value;
+		if (field === "tranItem") changes[id].tranItem = value;
 		if (field === "tranQty") changes[id].tranQty = value === "" || value === null ? null : parseFloat(value) || 0;
 		if (field === "tranRemark") changes[id].tranRemark = value;
 
 		// Remove if back to original
 		const c = changes[id];
+		const origDt = original.documentDt ? new Date(original.documentDt).toISOString().slice(0, 10) : "";
 		const isSame =
+			c.documentDt === origDt &&
+			c.tranType === original.tranType &&
+			c.tranItem === original.tranItem &&
 			c.tranQty === original.tranQty &&
 			c.tranRemark === (original.tranRemark ?? "");
 
@@ -113,6 +130,9 @@
 		return item ? item.value : code;
 	}
 
+	const tranTypeItems = $derived(TRAN_TYPE.list);
+	const tranItemItems = $derived(data.itemInfo.list);
+
 	const dateFiltered = $derived(() => {
 		const from = parseDate(fromDate);
 		const toEnd = parseDate(toDate);
@@ -136,7 +156,6 @@
 	const filtered = $derived(
 		dateFiltered().filter(
 			(r) =>
-				String(r.id).includes(search) ||
 				r.tranType.toLowerCase().includes(search.toLowerCase()) ||
 				r.tranItem.toLowerCase().includes(search.toLowerCase()) ||
 				String(r.tranQty).includes(search) ||
@@ -261,7 +280,6 @@
 
 	function handleExport(format: "csv" | "json") {
 		const exportData = filtered.map((r) => ({
-			id: r.id,
 			documentDt: formatDate(r.documentDt),
 			tranType: tranTypeLabel(r.tranType),
 			tranItem: r.tranItem,
@@ -273,7 +291,6 @@
 	}
 
 	const columns = [
-		{ key: "id", label: "ID" },
 		{ key: "documentDt", label: "Document Dt" },
 		{ key: "tranType", label: "Tran Type" },
 		{ key: "tranItem", label: "Tran Item" },
@@ -299,7 +316,7 @@
 					Cancel
 				</Button>
 				<form method="POST" action="?/saveItems" use:enhance={() => { return async ({ result, update }) => { if (result.type === "success" || result.type === "redirect") { toast.success("Items saved successfully."); changes = {}; qtyDisplays = {}; } else if (result.type === "failure") { const errData = result.data as { message?: string; field?: string; id?: number } | undefined; if (errData?.message) toast.error(errData.message); if (errData?.field && errData?.id !== undefined) { focusField(errData.field, errData.id); } } await update(); }; }}>
-					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), tranQty: val.tranQty, tranRemark: val.tranRemark || null })))} />
+					<input type="hidden" name="changes" value={JSON.stringify(Object.entries(changes).map(([id, val]) => ({ id: Number(id), documentDt: val.documentDt || null, tranType: val.tranType || null, tranItem: val.tranItem || null, tranQty: val.tranQty, tranRemark: val.tranRemark || null })))} />
 					<Button size="sm" type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
 						<SaveIcon class="mr-2 size-4" />
 						Save
@@ -409,14 +426,36 @@
 								class="accent-primary size-4"
 							/>
 						</Table.Cell>
-						<Table.Cell>
-							<div class="border-blue-400 border rounded px-2 py-1 text-xs font-mono font-medium bg-muted/30 dark:bg-zinc-800">{record.id}</div>
+						<Table.Cell class="font-medium">
+							<div class="w-36" id="documentDt-{record.id}">
+								<Input
+									type="date"
+									value={changes[record.id]?.documentDt ?? (record.documentDt ? new Date(record.documentDt).toISOString().slice(0, 10) : "")}
+									oninput={(e) => updateInlineChange(record.id, "documentDt", (e.target as HTMLInputElement).value)}
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
 						</Table.Cell>
-						<Table.Cell class="font-medium">{formatDate(record.documentDt)}</Table.Cell>
 						<Table.Cell>
-							<div class="border-purple-400 border rounded px-2 py-1 text-xs bg-muted/30 dark:bg-zinc-800">{tranTypeLabel(record.tranType)}</div>
+							<div class="w-36" id="tranType-{record.id}">
+								<SearchableSelect
+									items={tranTypeItems}
+									bind:value={() => changes[record.id]?.tranType ?? record.tranType, (v) => updateInlineChange(record.id, "tranType", v)}
+									placeholder="Select type..."
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
 						</Table.Cell>
-						<Table.Cell class="font-mono">{record.tranItem}</Table.Cell>
+						<Table.Cell>
+							<div class="w-48" id="tranItem-{record.id}">
+								<SearchableSelect
+									items={tranItemItems}
+									bind:value={() => changes[record.id]?.tranItem ?? record.tranItem, (v) => updateInlineChange(record.id, "tranItem", v)}
+									placeholder="Select item..."
+									class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
+								/>
+							</div>
+						</Table.Cell>
 						<Table.Cell>
 							<div class="w-28" id="tranQty-{record.id}">
 								<Input
@@ -465,7 +504,7 @@
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={9} class="h-24 text-center">
+						<Table.Cell colspan={8} class="h-24 text-center">
 							{search || fromDate || toDate ? "No records match your filters." : "No records found."}
 						</Table.Cell>
 					</Table.Row>

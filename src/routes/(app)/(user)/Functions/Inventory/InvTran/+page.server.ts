@@ -193,6 +193,9 @@ export const actions: Actions = {
 
 		type ChangeItem = {
 			id: number;
+			documentDt: string | null;
+			tranType: string | null;
+			tranItem: string | null;
 			tranQty: number;
 			tranRemark: string | null;
 		};
@@ -206,6 +209,15 @@ export const actions: Actions = {
 		for (const c of changes) {
 			if (!c.id || isNaN(c.id)) {
 				return fail(400, { message: "Invalid ID in change data." });
+			}
+			if (!c.documentDt || typeof c.documentDt !== "string") {
+				return fail(400, { message: `Document Date is required for ID ${c.id}.` });
+			}
+			if (!c.tranType || typeof c.tranType !== "string") {
+				return fail(400, { message: `Tran Type is required for ID ${c.id}.` });
+			}
+			if (!c.tranItem || typeof c.tranItem !== "string") {
+				return fail(400, { message: `Tran Item is required for ID ${c.id}.` });
 			}
 			if (c.tranQty == null || isNaN(c.tranQty) || c.tranQty === 0) {
 				return fail(400, { message: `Tran Qty must be a non-zero number for ID ${c.id}.` });
@@ -221,8 +233,11 @@ export const actions: Actions = {
 			await db
 				.update(invTran)
 				.set({
+					documentDt: new Date(c.documentDt + "T00:00:00"),
+					tranType: c.tranType ?? undefined,
+					tranItem: c.tranItem ?? undefined,
 					tranQty: roundByFormat(c.tranQty, fmt) ?? 0,
-					tranRemark: c.tranRemark || null,
+					tranRemark: c.tranRemark || undefined,
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
 				})
