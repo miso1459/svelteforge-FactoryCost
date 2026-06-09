@@ -1,0 +1,38 @@
+import { db } from "$lib/server/db/index.js";
+import { invTran, appSettings, menus } from "$lib/server/db/schema.js";
+import { redirect } from "@sveltejs/kit";
+import { eq, desc } from "drizzle-orm";
+import type { PageServerLoad } from "./$types.js";
+import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
+
+export const load: PageServerLoad = async ({ locals, url }) => {
+	if (!locals.user) redirect(302, "/login");
+
+	const allRecords = await db
+		.select()
+		.from(invTran)
+		.orderBy(desc(invTran.id));
+
+	const formatQtySetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatQty"),
+	});
+	const formatQty = formatQtySetting?.value ?? "#,##0.00";
+
+	const formatPriceSetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatPrice"),
+	});
+	const formatPrice = formatPriceSetting?.value ?? "#,##0.00";
+
+	const formatAmountSetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatAmount"),
+	});
+	const formatAmount = formatAmountSetting?.value ?? "#,##0";
+
+	const currentMenu = await db.query.menus.findFirst({
+		where: eq(menus.path, url.pathname),
+	});
+
+	const itemInfo = await getItemInfo();
+
+	return { records: allRecords, currentUserName: locals.user.name, formatQty, formatPrice, formatAmount, currentMenu, itemInfo };
+};
