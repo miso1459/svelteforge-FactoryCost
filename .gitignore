@@ -32,3 +32,4 @@ graphify-out/
 .reasonix/
 .playwright-mcp/
 /qa*
+scripts/
