@@ -148,7 +148,7 @@ export async function seedDemo() {
 			desc: "Inventory transaction history - read-only view of all inventory movements",
 			path: "/Functions/Inventory/InvTranHistory",
 			icon: null,
-			role: '["admin","editor","viewer"]',
+			role: '["admin","editor"]',
 			sortOrder: 4,
 			parentId: inventoryFolderId,
 			isActive: true,
