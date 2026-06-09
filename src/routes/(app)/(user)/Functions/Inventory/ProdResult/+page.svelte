@@ -63,7 +63,13 @@
 	let selectedIds = $state(new Set<string>());
 
 	// ── Parent-Child Expand State ──────────────────────────────────────────
-	// I01 always shown under R03 — no expand/collapse needed
+	let expanded = new SvelteSet<number>();
+
+	function toggleExpand(id: number) {
+		if (expanded.has(id)) expanded.delete(id);
+		else expanded.add(id);
+		expanded = expanded; // trigger reactivity
+	}
 
 	// ── Records with depth (parent-child hierarchy) ────────────────────────
 	type RecordWithDepth = (typeof data.records)[number] & { depth: number };
@@ -85,25 +91,73 @@
 	const recordsWithDepth = $derived.by(() => {
 		const result: RecordWithDepth[] = [];
 
+		// Group records by type
+		const r03Records: typeof data.records = [];
+		const i01Records: typeof data.records = [];
+		const i02Records: typeof data.records = [];
+
 		for (const record of data.records) {
 			if (record.tranType === 'R03') {
-				result.push({ ...record, depth: 0 });
-				// Append I01 children right after parent R03
-				const children = r03ToI01Map.get(record.id) ?? [];
+				r03Records.push(record);
+			} else if (record.tranType === 'I01') {
+				i01Records.push(record);
+			} else if (record.tranType === 'I02') {
+				i02Records.push(record);
+			}
+		}
+
+		// Build R03 -> I01 children map
+		const r03ToI01 = new Map<number, typeof i01Records>();
+		for (const i01 of i01Records) {
+			if (i01.prodId) {
+				const parentId = Number(i01.prodId);
+				if (!r03ToI01.has(parentId)) r03ToI01.set(parentId, []);
+				r03ToI01.get(parentId)!.push(i01);
+			}
+		}
+
+		// Build I01 -> R03 parent map (for sorting)
+		const i01ToR03 = new Map<number, number>();
+		for (const i01 of i01Records) {
+			if (i01.prodId) {
+				i01ToR03.set(i01.id, Number(i01.prodId));
+			}
+		}
+
+		// Sort I01 records by their parent R03's order
+		const r03Order = new Map<number, number>();
+		r03Records.forEach((r, idx) => r03Order.set(r.id, idx));
+		i01Records.sort((a, b) => {
+			const orderA = r03Order.get(i01ToR03.get(a.id) ?? -1) ?? -1;
+			const orderB = r03Order.get(i01ToR03.get(b.id) ?? -1) ?? -1;
+			return orderA - orderB;
+		});
+
+		// Interleave R03 and its I01 children
+		for (const r03 of r03Records) {
+			result.push({ ...r03, depth: 0 });
+			if (expanded.has(r03.id)) {
+				const children = r03ToI01.get(r03.id) ?? [];
 				for (const child of children) {
 					result.push({ ...child, depth: 1 });
 				}
-			} else if (record.tranType === 'I02') {
-				// I02 shown as top-level (no hierarchy)
-				result.push({ ...record, depth: 0 });
 			}
-			// I01 skipped here — already added as children of R03
+		}
+
+		// Add I02 records (independent, no hierarchy)
+		for (const i02 of i02Records) {
+			result.push({ ...i02, depth: 0 });
 		}
 
 		return result;
 	});
 
-		// ── Inline Edit State ────────────────────────────────────────────────────
+	// Check if R03 has I01 children
+	function hasI01Children(r03Id: number): boolean {
+		return r03ToI01Map.has(r03Id) && r03ToI01Map.get(r03Id)!.length > 0;
+	}
+
+	// ── Inline Edit State ────────────────────────────────────────────────────
 	let changes = $state<Record<number, {
 		documentDt: string;
 		tranType: string;
@@ -472,6 +526,7 @@
 					{@const isModified = Boolean(changes[record.id])}
 					{@const isEditable = record.tranType === 'R03'}
 					{@const isParent = record.tranType === 'R03'}
+					{@const hasChildren = isParent && hasI01Children(record.id)}
 					{@const depth = (record as any).depth ?? 0}
 					<Table.Row class={[
 						selectedIds.has(rid) ? 'bg-muted/50' : '',
@@ -480,9 +535,24 @@
 					].filter(Boolean).join(' ')}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<div class="flex items-center gap-1" style="margin-left: {depth * 1.5}rem">
-								<!-- Indentation indicator -->
-								{#if depth > 0}
-									<span class="text-muted-foreground text-xs">└</span>
+								<!-- Expand/collapse button for parent rows -->
+								{#if isParent && hasChildren}
+									<button
+										type="button"
+										class="text-muted-foreground hover:text-foreground flex items-center p-0.5"
+										onclick={() => toggleExpand(record.id)}
+									>
+										{#if expanded.has(record.id)}
+											<ChevronDownIcon class="size-4" />
+										{:else}
+											<ChevronRightIcon class="size-4" />
+										{/if}
+									</button>
+								{:else if isParent}
+									<span class="w-5"></span>
+								{:else}
+									<!-- Child rows show indent but no toggle -->
+									<span class="w-5"></span>
 								{/if}
 								<input
 									type="checkbox"
