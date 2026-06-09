@@ -63,13 +63,7 @@
 	let selectedIds = $state(new Set<string>());
 
 	// ── Parent-Child Expand State ──────────────────────────────────────────
-	let expanded = new SvelteSet<number>();
-
-	function toggleExpand(id: number) {
-		if (expanded.has(id)) expanded.delete(id);
-		else expanded.add(id);
-		expanded = expanded; // trigger reactivity
-	}
+	// I01 always shown under R03 — no expand/collapse needed
 
 	// ── Records with depth (parent-child hierarchy) ────────────────────────
 	type RecordWithDepth = (typeof data.records)[number] & { depth: number };
@@ -94,26 +88,22 @@
 		for (const record of data.records) {
 			if (record.tranType === 'R03') {
 				result.push({ ...record, depth: 0 });
-			} else if (record.tranType === 'I01') {
-				// Only show if parent R03 is expanded
-				if (record.prodId && expanded.has(Number(record.prodId))) {
-					result.push({ ...record, depth: 1 });
+				// Append I01 children right after parent R03
+				const children = r03ToI01Map.get(record.id) ?? [];
+				for (const child of children) {
+					result.push({ ...child, depth: 1 });
 				}
 			} else if (record.tranType === 'I02') {
 				// I02 shown as top-level (no hierarchy)
 				result.push({ ...record, depth: 0 });
 			}
+			// I01 skipped here — already added as children of R03
 		}
 
 		return result;
 	});
 
-	// Check if R03 has I01 children
-	function hasI01Children(r03Id: number): boolean {
-		return r03ToI01Map.has(r03Id) && r03ToI01Map.get(r03Id)!.length > 0;
-	}
-
-	// ── Inline Edit State ────────────────────────────────────────────────────
+		// ── Inline Edit State ────────────────────────────────────────────────────
 	let changes = $state<Record<number, {
 		documentDt: string;
 		tranType: string;
@@ -482,7 +472,6 @@
 					{@const isModified = Boolean(changes[record.id])}
 					{@const isEditable = record.tranType === 'R03'}
 					{@const isParent = record.tranType === 'R03'}
-					{@const hasChildren = isParent && hasI01Children(record.id)}
 					{@const depth = (record as any).depth ?? 0}
 					<Table.Row class={[
 						selectedIds.has(rid) ? 'bg-muted/50' : '',
@@ -491,24 +480,9 @@
 					].filter(Boolean).join(' ')}>
 						<Table.Cell class="sticky left-0 z-[1] bg-background">
 							<div class="flex items-center gap-1" style="margin-left: {depth * 1.5}rem">
-								<!-- Expand/collapse button for parent rows -->
-								{#if isParent && hasChildren}
-									<button
-										type="button"
-										class="text-muted-foreground hover:text-foreground flex items-center p-0.5"
-										onclick={() => toggleExpand(record.id)}
-									>
-										{#if expanded.has(record.id)}
-											<ChevronDownIcon class="size-4" />
-										{:else}
-											<ChevronRightIcon class="size-4" />
-										{/if}
-									</button>
-								{:else if isParent}
-									<span class="w-5"></span>
-								{:else}
-									<!-- Child rows show indent but no toggle -->
-									<span class="w-5"></span>
+								<!-- Indentation indicator -->
+								{#if depth > 0}
+									<span class="text-muted-foreground text-xs">└</span>
 								{/if}
 								<input
 									type="checkbox"
