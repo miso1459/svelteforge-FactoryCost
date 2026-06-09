@@ -267,6 +267,7 @@
 	const filtered = $derived(
 		dateFiltered().filter(
 			(r) =>
+				String(r.id).includes(search) ||
 				r.tranType.toLowerCase().includes(search.toLowerCase()) ||
 				r.tranItem.toLowerCase().includes(search.toLowerCase()) ||
 				String(r.tranQty).includes(search) ||
@@ -420,6 +421,7 @@
 
 	function handleExport(format: "csv" | "json") {
 		const exportData = filtered.map((r) => ({
+			id: r.id,
 			documentDt: formatDate(r.documentDt),
 			tranType: tranTypeLabel(r.tranType),
 			tranItem: r.tranItem,
@@ -431,6 +433,7 @@
 	}
 
 	const columns = [
+		{ key: "id", label: "ID" },
 		{ key: "documentDt", label: "Document Dt" },
 		{ key: "tranType", label: "Tran Type" },
 		{ key: "tranItem", label: "Tran Item" },
@@ -592,6 +595,9 @@
 								/>
 							</div>
 						</Table.Cell>
+						<Table.Cell>
+							<span class="text-xs py-1 px-2 block h-8 leading-6 font-mono">{record.id}</span>
+						</Table.Cell>
 						<Table.Cell class="font-medium">
 							<div class="w-36" id="documentDt-{record.id}">
 								{#if isEditable}
@@ -684,7 +690,7 @@
 					</Table.Row>
 				{:else}
 					<Table.Row>
-						<Table.Cell colspan={7} class="h-24 text-center">
+						<Table.Cell colspan={8} class="h-24 text-center">
 							{search || fromDate || toDate ? "No records match your filters." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
