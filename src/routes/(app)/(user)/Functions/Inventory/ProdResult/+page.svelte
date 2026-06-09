@@ -313,7 +313,7 @@
 </script>
 
 <svelte:head>
-	<title>생산입고 - SvelteForge Factory Cost</title>
+	<title>Production Result - SvelteForge Factory Cost</title>
 </svelte:head>
 
 <div class="min-w-0 space-y-6">
