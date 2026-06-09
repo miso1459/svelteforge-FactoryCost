@@ -131,8 +131,8 @@ export async function seedDemo() {
 		{
 			id: generateId(10),
 			type: "link" as const,
-			name: "생산입고",
-			desc: "생산입고 관리 (R03 사용자 등록, I01 자동 생성)",
+			name: "Production Result",
+			desc: "Production receipt management (R03 user registration, I01 auto-generation)",
 			path: "/Functions/Inventory/ProdResult",
 			icon: null,
 			role: '["admin","editor"]',
