@@ -31,12 +31,39 @@ const ACCT_NAME_MAP: Record<string, string> = Object.fromEntries(
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(302, "/login");
 
-	// R03 records only
-	const allRecords = await db
+	// Get R03 records
+	const r03Records = await db
 		.select()
 		.from(invTran)
 		.where(eq(invTran.tranType, "R03"))
 		.orderBy(desc(invTran.id));
+
+	// Get associated I01 records (children of R03)
+	const r03Ids = r03Records.map((r) => r.id);
+	let i01Records: typeof r03Records = [];
+
+	if (r03Ids.length > 0) {
+		i01Records = await db
+			.select()
+			.from(invTran)
+			.where(and(
+				eq(invTran.tranType, "I01"),
+				// Show only I01 records that have a valid Prod_id pointing to an R03
+			))
+			.orderBy(desc(invTran.id));
+		// Filter to only I01 with prodId matching an R03 id
+		i01Records = i01Records.filter((r) => r.prodId && r03Ids.includes(Number(r.prodId)));
+	}
+
+	// Get I02 records (also displayed but read-only)
+	const i02Records = await db
+		.select()
+		.from(invTran)
+		.where(eq(invTran.tranType, "I02"))
+		.orderBy(desc(invTran.id));
+
+	// Combine R03, I01, and I02 records
+	const allRecords = [...r03Records, ...i01Records, ...i02Records];
 
 	const formatSetting = await db.query.appSettings.findFirst({
 		where: eq(appSettings.key, "formatQty"),
@@ -312,9 +339,7 @@ export const actions: Actions = {
 			if (c.tranQty == null || isNaN(c.tranQty) || c.tranQty === 0) {
 				return fail(400, { message: `Tran Qty must be a non-zero number for ID ${c.id}.` });
 			}
-			if (c.tranPrice == null || isNaN(c.tranPrice)) {
-				return fail(400, { message: `Tran Price is required for ID ${c.id}.` });
-			}
+			// Price is optional (not required)
 		}
 
 		const fmtSetting = await db.query.appSettings.findFirst({
@@ -324,7 +349,7 @@ export const actions: Actions = {
 
 		for (const c of changes) {
 			const qty = roundByFormat(c.tranQty, fmt) ?? 0;
-			const price = roundByFormat(c.tranPrice, fmt) ?? 0;
+			const price = roundByFormat(c.tranPrice ?? 0, fmt) ?? 0;
 			const amount = roundByFormat(qty * price, fmt) ?? 0;
 			await db
 				.update(invTran)
