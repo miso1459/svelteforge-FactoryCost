@@ -465,7 +465,7 @@
 			{/if}
 			<Button onclick={() => (createOpen = true)}>
 				<PlusIcon class="mr-2 size-4" />
-				생산입고 추가
+				Add Result
 			</Button>
 		</div>
 	</div>
