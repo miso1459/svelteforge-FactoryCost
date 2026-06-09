@@ -239,6 +239,28 @@ export const actions: Actions = {
 			})
 			.where(eq(invTran.id, id));
 
+		// Recalculate associated I01 quantities based on BOM
+		const bomRecords = await db
+			.select()
+			.from(masterBOM)
+			.where(eq(masterBOM.BOM_item_parent, tranItem));
+
+		for (const bom of bomRecords) {
+			const i01Qty = (bom.BOM_item_qty || 1) * qty;
+			await db
+				.update(invTran)
+				.set({
+					tranQty: roundByFormat(i01Qty, fmt) ?? 0,
+					updatedBy: locals.user.name,
+					updatedAt: new Date(),
+				})
+				.where(and(
+					eq(invTran.prodId, String(id)),
+					eq(invTran.tranType, "I01"),
+					eq(invTran.tranItem, bom.BOM_item)
+				));
+		}
+
 		return { success: true };
 	},
 
@@ -366,6 +388,30 @@ export const actions: Actions = {
 					updatedAt: new Date(),
 				})
 				.where(eq(invTran.id, c.id));
+
+			// Recalculate associated I01 quantities based on BOM
+			if (c.tranItem) {
+				const bomRecords = await db
+					.select()
+					.from(masterBOM)
+					.where(eq(masterBOM.BOM_item_parent, c.tranItem));
+
+				for (const bom of bomRecords) {
+					const i01Qty = (bom.BOM_item_qty || 1) * qty;
+					await db
+						.update(invTran)
+						.set({
+							tranQty: roundByFormat(i01Qty, fmt) ?? 0,
+							updatedBy: locals.user.name,
+							updatedAt: new Date(),
+						})
+						.where(and(
+							eq(invTran.prodId, String(c.id)),
+							eq(invTran.tranType, "I01"),
+							eq(invTran.tranItem, bom.BOM_item)
+						));
+				}
+			}
 		}
 
 		return { success: true };
