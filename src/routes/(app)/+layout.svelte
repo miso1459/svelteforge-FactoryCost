@@ -25,7 +25,11 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar user={data.user} notificationCount={data.unreadNotificationCount} menus={data.menus} />
+	<AppSidebar
+		user={data.user}
+		notificationCount={data.unreadNotificationCount}
+		menus={data.menus}
+	/>
 	<Sidebar.Inset class="min-w-0 overflow-hidden">
 		<header
 			class="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4"
@@ -50,14 +54,14 @@
 			</Breadcrumb.Root>
 
 			<div class="ml-auto flex items-center gap-1">
-				{#if data.user?.role === 'admin'}
+				<!-- {#if data.user?.role === 'admin'}
 				<CommandPalette />
 				<NotificationBell
 					count={data.unreadNotificationCount}
 					notifications={data.recentNotifications}
 				/>
 				<AppsMenu />
-				{/if}
+				{/if} -->
 				<ThemeToggle />
 			</div>
 		</header>
