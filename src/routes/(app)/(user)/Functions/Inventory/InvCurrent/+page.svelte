@@ -9,9 +9,7 @@
 	import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
 	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import DownloadIcon from "@lucide/svelte/icons/download";
-	import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
 	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { toast } from "svelte-sonner";
 	import { invalidateAll } from "$app/navigation";
@@ -42,21 +40,6 @@
 	let pageSize = $state(10);
 	let currentPage = $state(1);
 
-	// ── Audit dialog ──────────────────────────────────────────────────────────
-	let auditOpen = $state(false);
-	let auditRecord = $state<{
-		createdBy: string;
-		updatedBy: string;
-		createdAt: Date | null;
-		updatedAt: Date | null;
-	} | null>(null);
-
-	function openAudit(record: { createdBy: string; updatedBy: string; createdAt: Date | null; updatedAt: Date | null }) {
-		auditRecord = record;
-		auditOpen = true;
-	}
-
-	// ── Helpers ───────────────────────────────────────────────────────────────
 	function pad(n: number): string {
 		return n.toString().padStart(2, "0");
 	}
@@ -65,12 +48,6 @@
 		if (!date) return "—";
 		const d = new Date(date);
 		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-	}
-
-	function formatDateTime(date: Date | null) {
-		if (!date) return "—";
-		const d = new Date(date);
-		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 	}
 
 	// ── Item value lookup ─────────────────────────────────────────────────────
@@ -257,9 +234,9 @@
 		<Table.Root class="whitespace-nowrap">
 			<Table.Header>
 				<Table.Row>
-					{#each columns as col (col.key)}
+					{#each columns as col, i (col.key)}
 						{@const SortIcon = sortIcon(col.key)}
-						<Table.Head>
+						<Table.Head class={i < columns.length - 1 ? 'border-r border-border/50' : ''}>
 							<button
 								class="flex items-center gap-1 text-left font-medium"
 								onclick={() => toggleSort(col.key)}
@@ -269,26 +246,20 @@
 							</button>
 						</Table.Head>
 					{/each}
-					<Table.Head class="w-[80px]">Audit</Table.Head>
-				</Table.Row>
+					</Table.Row>
 			</Table.Header>
 			<Table.Body>
 				{#each paginated as row (row.tranItem)}
 					<Table.Row>
-						<Table.Cell class="font-medium">{row.itemValue}</Table.Cell>
-						<Table.Cell class="text-right">{formatStdPrice(row.preQty, data.formatQty)}</Table.Cell>
-						<Table.Cell class="text-right">{formatStdPrice(row.inQty, data.formatQty)}</Table.Cell>
-						<Table.Cell class="text-right">{formatStdPrice(row.outQty, data.formatQty)}</Table.Cell>
+						<Table.Cell class="border-r border-border/50 font-medium">{row.itemValue}</Table.Cell>
+						<Table.Cell class="border-r border-border/50 text-right">{formatStdPrice(row.preQty, data.formatQty)}</Table.Cell>
+						<Table.Cell class="border-r border-border/50 text-right">{formatStdPrice(row.inQty, data.formatQty)}</Table.Cell>
+						<Table.Cell class="border-r border-border/50 text-right">{formatStdPrice(row.outQty, data.formatQty)}</Table.Cell>
 						<Table.Cell class="text-right font-semibold">{formatStdPrice(row.stockQty, data.formatQty)}</Table.Cell>
-						<Table.Cell>
-							<Button variant="ghost" size="icon" class="size-8" onclick={() => openAudit({ createdBy: "", updatedBy: "", createdAt: null, updatedAt: null })}>
-								<ScrollTextIcon class="size-4" />
-							</Button>
-						</Table.Cell>
-					</Table.Row>
-				{:else}
-					<Table.Row>
-						<Table.Cell colspan={6} class="h-24 text-center">
+				</Table.Row>
+			{:else}
+				<Table.Row>
+					<Table.Cell colspan={5} class="h-24 text-center">
 							{search || fromDate || toDate ? "No items match your filters." : "No records found."}
 						</Table.Cell>
 					</Table.Row>
@@ -299,35 +270,3 @@
 	</div>
 </div>
 
-<!-- Audit Dialog -->
-<Dialog.Root bind:open={auditOpen}>
-	<Dialog.Content class="sm:max-w-[400px]">
-		<Dialog.Header>
-			<Dialog.Title>Audit Trail</Dialog.Title>
-			<Dialog.Description>Record creation and modification history.</Dialog.Description>
-		</Dialog.Header>
-		{#if auditRecord}
-			<div class="grid gap-4 py-4">
-				<div class="grid gap-1">
-					<Label class="text-muted-foreground text-xs">Created By</Label>
-					<p class="text-sm font-medium">{auditRecord.createdBy || "—"}</p>
-				</div>
-				<div class="grid gap-1">
-					<Label class="text-muted-foreground text-xs">Updated By</Label>
-					<p class="text-sm font-medium">{auditRecord.updatedBy || "—"}</p>
-				</div>
-				<div class="grid gap-1">
-					<Label class="text-muted-foreground text-xs">Created At</Label>
-					<p class="text-sm font-medium">{formatDateTime(auditRecord.createdAt)}</p>
-				</div>
-				<div class="grid gap-1">
-					<Label class="text-muted-foreground text-xs">Updated At</Label>
-					<p class="text-sm font-medium">{formatDateTime(auditRecord.updatedAt)}</p>
-				</div>
-			</div>
-		{/if}
-		<Dialog.Footer>
-			<Button onclick={() => (auditOpen = false)}>Close</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>

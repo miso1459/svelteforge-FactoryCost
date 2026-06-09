@@ -44,7 +44,6 @@ export async function getItemInfo(): Promise<CodeValueGroup> {
   const records = await db
     .select()
     .from(masterItem)
-    .where(eq(masterItem.isActive, true))
     .orderBy(asc(masterItem.itemAcct), asc(masterItem.itemCode));
 
   return {
