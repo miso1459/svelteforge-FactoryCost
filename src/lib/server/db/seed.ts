@@ -141,6 +141,19 @@ export async function seedDemo() {
 			isActive: true,
 			prompt: null,
 		},
+		{
+			id: generateId(10),
+			type: "link" as const,
+			name: "Inv. Tran. History",
+			desc: "Inventory transaction history - read-only view of all inventory movements",
+			path: "/Functions/Inventory/InvTranHistory",
+			icon: null,
+			role: '["admin","editor","viewer"]',
+			sortOrder: 4,
+			parentId: inventoryFolderId,
+			isActive: true,
+			prompt: null,
+		},
 	];
 
 	for (const m of menuData) {
