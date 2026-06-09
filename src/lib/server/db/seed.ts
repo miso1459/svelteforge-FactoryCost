@@ -145,7 +145,7 @@ export async function seedDemo() {
 			id: generateId(10),
 			type: "link" as const,
 			name: "Inv. Tran. History",
-			desc: "Inventory transaction history - read-only",
+			desc: "Inventory transaction history",
 			path: "/Functions/Inventory/InvTranHistory",
 			icon: null,
 			role: '["admin","editor"]',
