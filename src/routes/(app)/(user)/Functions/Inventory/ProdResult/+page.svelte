@@ -459,16 +459,7 @@
 						</Table.Cell>
 						<Table.Cell>
 							<div class="w-36" id="tranType-{record.id}">
-								{#if isEditable}
-									<SearchableSelect
-										items={tranTypeItems}
-										bind:value={() => changes[record.id]?.tranType ?? record.tranType, (v) => updateInlineChange(record.id, "tranType", v)}
-										placeholder="Select type..."
-										class="h-8 text-xs border-amber-400 focus-visible:ring-amber-400"
-									/>
-								{:else}
-									<span class="text-xs py-1 px-2 block h-8 leading-6">{tranTypeLabel(record.tranType)}</span>
-								{/if}
+								<span class="text-xs py-1 px-2 block h-8 leading-6">{tranTypeLabel(record.tranType)}</span>
 							</div>
 						</Table.Cell>
 						<Table.Cell>
