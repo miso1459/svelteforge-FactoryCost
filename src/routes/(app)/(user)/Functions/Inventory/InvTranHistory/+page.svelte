@@ -194,8 +194,8 @@
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">Transaction History</h1>
-			<p class="text-muted-foreground">View inventory transaction history</p>
+			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Inv. Tran. History"}</h1>
+			<p class="text-muted-foreground">{data.currentMenu?.desc ?? ""}</p>
 		</div>
 	</div>
 
