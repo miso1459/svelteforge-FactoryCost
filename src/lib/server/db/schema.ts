@@ -1,5 +1,20 @@
 import { sqliteTable, text, integer, real, uniqueIndex, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
+export const document = sqliteTable('document', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	title: text('title').notNull(),
+	content: text('content').notNull(), // We will store HTML or JSON as text
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
+export const config = sqliteTable('config', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull()
+});
+
 export const users = sqliteTable("users", {
 	id: text("id").primaryKey(),
 	email: text("email").notNull().unique(),

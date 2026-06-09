@@ -29,6 +29,7 @@
 		CollapsibleTrigger,
 		CollapsibleContent,
 	} from "$lib/components/ui/collapsible/index.js";
+	import { HomeIcon } from "@lucide/svelte";
 
 	type Props = {
 		user: {
@@ -89,42 +90,44 @@
 	};
 
 	const navigationAdmin: NavGroup[] = $derived([
-		{
-			label: "Templates",
-			items: [
-				{ title: "기본 관리", url: "/Templates/T01", icon: FileTextIcon },
-				{ title: "기본 관리 날짜", url: "/Templates/T02", icon: FileTextIcon },
-				{ title: "기본 관리 History", url: "/Templates/T03", icon: FileTextIcon },
-			],
-		},
-		{
-			label: "Overview",
-			items: [
-				{ title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
-				{ title: "Analytics", url: "/analytics", icon: BarChart3Icon },
-			],
-		},
+		// {
+		// 	label: "Templates",
+		// 	items: [
+		// 		{ title: "기본 관리", url: "/Templates/T01", icon: FileTextIcon },
+		// 		{ title: "기본 관리 날짜", url: "/Templates/T02", icon: FileTextIcon },
+		// 		{ title: "기본 관리 History", url: "/Templates/T03", icon: FileTextIcon },
+		// 	],
+		// },
+		// {
+		// 	label: "Overview",
+		// 	items: [
+		// 		{ title: "Dashboard", url: "/", icon: LayoutDashboardIcon },
+		// 		{ title: "Analytics", url: "/analytics", icon: BarChart3Icon },
+		// 	],
+		// },
 		{
 			label: "Management",
 			items: [
+				{ title: "Home", url: "/home", icon: HomeIcon },
 				{ title: "Users", url: "/users", icon: UsersIcon },
 				// { title: "Content", url: "/content", icon: FileTextIcon },
 				{ title: "Roles", url: "/roles", icon: ShieldIcon },
 				{ title: "Menus", url: "/Common/menus", icon: FileTextIcon },
+				{ title: "Content", url: "/Common/ContentsEditor", icon: FileTextIcon },
 			],
 		},
 		{
 			label: "System",
 			items: [
-				{
-					title: "Notifications",
-					url: "/notifications",
-					icon: BellIcon,
-					badge: notificationCount > 0 ? String(notificationCount) : undefined,
-				},
-				{ title: "Database", url: "/database", icon: DatabaseIcon },
+				// {
+				// 	title: "Notifications",
+				// 	url: "/notifications",
+				// 	icon: BellIcon,
+				// 	badge: notificationCount > 0 ? String(notificationCount) : undefined,
+				// },
+				// { title: "Database", url: "/database", icon: DatabaseIcon },
 				{ title: "Settings", url: "/settings", icon: SettingsIcon },
-				{ title: "Documentation", url: "/docs", icon: BookOpenIcon },
+				// { title: "Documentation", url: "/docs", icon: BookOpenIcon },
 			],
 		},
 	]);
@@ -134,15 +137,15 @@
 		"layout-dashboard": LayoutDashboardIcon,
 		"bar-chart-3": BarChart3Icon,
 		"file-text": FileTextIcon,
-		"users": UsersIcon,
-		"settings": SettingsIcon,
-		"shield": ShieldIcon,
-		"bell": BellIcon,
-		"database": DatabaseIcon,
+		users: UsersIcon,
+		settings: SettingsIcon,
+		shield: ShieldIcon,
+		bell: BellIcon,
+		database: DatabaseIcon,
 		"book-open": BookOpenIcon,
-		"zap": ZapIcon,
-		"user": UserIcon,
-		"crown": CrownIcon,
+		zap: ZapIcon,
+		user: UserIcon,
+		crown: CrownIcon,
 	};
 
 	const navigationUser = $derived.by(() => {
