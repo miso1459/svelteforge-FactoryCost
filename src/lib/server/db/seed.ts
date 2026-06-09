@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { db } from "./index.js";
-import { appSettings, menus, sessions, users, pages, notifications, oauthAccounts, passwordResetTokens } from "./schema.js";
+import { appSettings, menus, sessions, users, pages, notifications, oauthAccounts, passwordResetTokens, document, config, template01, template02, template03, masterItem, invTran, masterBOM } from "./schema.js";
 import { sql } from "drizzle-orm";
 import { generateId } from "../id.js";
 
@@ -17,7 +17,15 @@ export async function seedDemo() {
 	db.delete(menus).run();
 	db.delete(users).run();
 	db.delete(oauthAccounts).run();
+	db.delete(config).run();
+	db.delete(document).run();
+	db.delete(invTran).run();
+	db.delete(masterBOM).run();
+	db.delete(masterItem).run();
 	db.delete(passwordResetTokens).run();
+	db.delete(template01).run();
+	db.delete(template02).run();
+	db.delete(template03).run();
 
 	db.run(sql`PRAGMA foreign_keys = ON`);
 
