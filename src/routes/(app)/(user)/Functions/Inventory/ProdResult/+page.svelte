@@ -106,13 +106,13 @@
 			}
 		}
 
-		// Build R03 -> I01 children map
-		const r03ToI01 = new Map<number, typeof i01Records>();
+		// Build R03 -> I01/I03 children map
+		const r03Children = new Map<number, typeof i01Records>();
 		for (const i01 of i01Records) {
 			if (i01.prodId) {
 				const parentId = Number(i01.prodId);
-				if (!r03ToI01.has(parentId)) r03ToI01.set(parentId, []);
-				r03ToI01.get(parentId)!.push(i01);
+				if (!r03Children.has(parentId)) r03Children.set(parentId, []);
+				r03Children.get(parentId)!.push(i01);
 			}
 		}
 
@@ -133,11 +133,11 @@
 			return orderA - orderB;
 		});
 
-		// Interleave R03 and its I01 children
+		// Interleave R03 and its I01/I03 children
 		for (const r03 of r03Records) {
 			result.push({ ...r03, depth: 0 });
 			if (expanded.has(r03.id)) {
-				const children = r03ToI01.get(r03.id) ?? [];
+				const children = r03Children.get(r03.id) ?? [];
 				for (const child of children) {
 					result.push({ ...child, depth: 1 });
 				}

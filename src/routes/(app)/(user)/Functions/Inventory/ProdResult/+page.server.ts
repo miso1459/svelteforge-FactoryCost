@@ -55,15 +55,15 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		i01Records = i01Records.filter((r) => r.prodId && r03Ids.includes(Number(r.prodId)));
 	}
 
-	// Get I02 records (also displayed but read-only)
-	const i02Records = await db
+	// Get I03 records (also children of R03, like I01)
+	const i03Records = await db
 		.select()
 		.from(invTran)
-		.where(eq(invTran.tranType, "I02"))
+		.where(eq(invTran.tranType, "I03"))
 		.orderBy(desc(invTran.id));
 
-	// Combine R03, I01, and I02 records
-	const allRecords = [...r03Records, ...i01Records, ...i02Records];
+	// Combine R03, I01, and I03 records
+	const allRecords = [...r03Records, ...i01Records, ...i03Records];
 
 	const formatSetting = await db.query.appSettings.findFirst({
 		where: eq(appSettings.key, "formatQty"),
