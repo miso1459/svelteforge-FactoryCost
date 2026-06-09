@@ -25,6 +25,8 @@
 			tranRemark: string | null;
 		} | null;
 		formatQty?: string;
+		formatPrice?: string;
+		formatAmount?: string;
 		itemInfo?: { title: string; list: { code: string; value: string; stdPrice?: number }[] };
 		defaultDt?: string;
 	};
@@ -34,6 +36,8 @@
 		mode,
 		data = null,
 		formatQty = "#,##0.00",
+		formatPrice = "#,##0.00",
+		formatAmount = "#,##0",
 		itemInfo = { title: "", list: [] },
 		defaultDt = "",
 	}: Props = $props();
@@ -148,9 +152,9 @@
 
 	function onTranPriceBlur() {
 		if (tranPriceRaw !== null) {
-			const { decimalPlaces } = parseFormatPattern(formatQty);
+			const { decimalPlaces } = parseFormatPattern(formatPrice);
 			tranPriceRaw = Number(tranPriceRaw.toFixed(decimalPlaces));
-			tranPriceDisplay = formatStdPrice(tranPriceRaw, formatQty);
+			tranPriceDisplay = formatStdPrice(tranPriceRaw, formatPrice);
 		} else {
 			tranPriceDisplay = "";
 		}
@@ -162,11 +166,12 @@
 				documentDtStr = data.documentDt;
 				tranType = data.tranType;
 				tranItem = data.tranItem;
-				const { decimalPlaces } = parseFormatPattern(formatQty);
-				tranQtyRaw = data.tranQty != null ? Number(Number(data.tranQty).toFixed(decimalPlaces)) : null;
+				const { decimalPlaces: qtyDp } = parseFormatPattern(formatQty);
+				const { decimalPlaces: priceDp } = parseFormatPattern(formatPrice);
+				tranQtyRaw = data.tranQty != null ? Number(Number(data.tranQty).toFixed(qtyDp)) : null;
 				tranQtyDisplay = data.tranQty != null ? formatStdPrice(data.tranQty, formatQty) : "";
-				tranPriceRaw = data.tranPrice != null ? Number(Number(data.tranPrice).toFixed(decimalPlaces)) : null;
-				tranPriceDisplay = data.tranPrice != null ? formatStdPrice(data.tranPrice, formatQty) : "";
+				tranPriceRaw = data.tranPrice != null ? Number(Number(data.tranPrice).toFixed(priceDp)) : null;
+				tranPriceDisplay = data.tranPrice != null ? formatStdPrice(data.tranPrice, formatPrice) : "";
 			} else {
 				documentDtStr = defaultDt;
 				tranType = "";
@@ -184,9 +189,9 @@
 		if (mode === "create" && tranItem && itemInfo.list.length > 0) {
 			const item = itemInfo.list.find((i) => i.code === tranItem);
 			if (item?.stdPrice && item.stdPrice > 0 && tranPriceRaw === null) {
-				const { decimalPlaces } = parseFormatPattern(formatQty);
+				const { decimalPlaces } = parseFormatPattern(formatPrice);
 				tranPriceRaw = Number(item.stdPrice.toFixed(decimalPlaces));
-				tranPriceDisplay = formatStdPrice(tranPriceRaw, formatQty);
+				tranPriceDisplay = formatStdPrice(tranPriceRaw, formatPrice);
 			}
 		}
 	});
@@ -284,7 +289,7 @@
 				<div class="grid gap-2">
 					<Label class="text-muted-foreground">Tran Amount</Label>
 					<div class="flex h-10 items-center rounded-md border border-muted-foreground/20 bg-muted/30 px-3 text-sm">
-						{formatStdPrice(tranAmount(), formatQty)}
+						{formatStdPrice(tranAmount(), formatAmount)}
 					</div>
 				</div>
 				<div class="grid gap-2">

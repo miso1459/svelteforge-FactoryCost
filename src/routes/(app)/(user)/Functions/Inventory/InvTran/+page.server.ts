@@ -26,10 +26,20 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		.from(invTran)
 		.orderBy(desc(invTran.id));
 
-	const formatSetting = await db.query.appSettings.findFirst({
+	const formatQtySetting = await db.query.appSettings.findFirst({
 		where: eq(appSettings.key, "formatQty"),
 	});
-	const formatQty = formatSetting?.value ?? "#,##0.00";
+	const formatQty = formatQtySetting?.value ?? "#,##0.00";
+
+	const formatPriceSetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatPrice"),
+	});
+	const formatPrice = formatPriceSetting?.value ?? "#,##0.00";
+
+	const formatAmountSetting = await db.query.appSettings.findFirst({
+		where: eq(appSettings.key, "formatAmount"),
+	});
+	const formatAmount = formatAmountSetting?.value ?? "#,##0";
 
 	const currentMenu = await db.query.menus.findFirst({
 		where: eq(menus.path, url.pathname),
@@ -38,7 +48,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const itemInfo = await getItemInfo();
 	const allItemInfoMap = await getAllItemInfoMap();
 
-	return { records: allRecords, currentUserName: locals.user.name, formatQty, currentMenu, itemInfo, allItemInfoMap };
+	return { records: allRecords, currentUserName: locals.user.name, formatQty, formatPrice, formatAmount, currentMenu, itemInfo, allItemInfoMap };
 };
 
 export const actions: Actions = {
@@ -70,14 +80,18 @@ export const actions: Actions = {
 		const userName = locals.user.name;
 		const now = new Date();
 
-		const fmtSetting = await db.query.appSettings.findFirst({
-			where: eq(appSettings.key, "formatQty"),
-		});
-		const fmt = fmtSetting?.value ?? "#,##0.00";
+		const [fmtQtySetting, fmtPriceSetting, fmtAmountSetting] = await Promise.all([
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatQty") }),
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatPrice") }),
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatAmount") }),
+		]);
+		const fmtQty = fmtQtySetting?.value ?? "#,##0.00";
+		const fmtPrice = fmtPriceSetting?.value ?? "#,##0.00";
+		const fmtAmount = fmtAmountSetting?.value ?? "#,##0";
 
-		const qty = roundByFormat(Number(tranQty), fmt) ?? 0;
-		const price = roundByFormat(Number(tranPrice) || 0, fmt) ?? 0;
-		const amount = roundByFormat(qty * price, fmt) ?? 0;
+		const qty = roundByFormat(Number(tranQty), fmtQty) ?? 0;
+		const price = roundByFormat(Number(tranPrice) || 0, fmtPrice) ?? 0;
+		const amount = roundByFormat(qty * price, fmtAmount) ?? 0;
 
 		await db.insert(invTran).values({
 			documentDt,
@@ -127,14 +141,18 @@ export const actions: Actions = {
 
 		const documentDt = new Date(documentDtStr + "T00:00:00");
 
-		const fmtSetting = await db.query.appSettings.findFirst({
-			where: eq(appSettings.key, "formatQty"),
-		});
-		const fmt = fmtSetting?.value ?? "#,##0.00";
+		const [fmtQtySetting, fmtPriceSetting, fmtAmountSetting] = await Promise.all([
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatQty") }),
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatPrice") }),
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatAmount") }),
+		]);
+		const fmtQty = fmtQtySetting?.value ?? "#,##0.00";
+		const fmtPrice = fmtPriceSetting?.value ?? "#,##0.00";
+		const fmtAmount = fmtAmountSetting?.value ?? "#,##0";
 
-		const qty = roundByFormat(Number(tranQty), fmt) ?? 0;
-		const price = roundByFormat(Number(tranPrice) || 0, fmt) ?? 0;
-		const amount = roundByFormat(qty * price, fmt) ?? 0;
+		const qty = roundByFormat(Number(tranQty), fmtQty) ?? 0;
+		const price = roundByFormat(Number(tranPrice) || 0, fmtPrice) ?? 0;
+		const amount = roundByFormat(qty * price, fmtAmount) ?? 0;
 
 		await db
 			.update(invTran)
@@ -238,20 +256,21 @@ export const actions: Actions = {
 			if (c.tranQty == null || isNaN(c.tranQty) || c.tranQty === 0) {
 				return fail(400, { message: `Tran Qty must be a non-zero number for ID ${c.id}.` });
 			}
-			if (c.tranPrice == null || isNaN(c.tranPrice)) {
-				return fail(400, { message: `Tran Price is required for ID ${c.id}.` });
-			}
 		}
 
-		const fmtSetting = await db.query.appSettings.findFirst({
-			where: eq(appSettings.key, "formatQty"),
-		});
-		const fmt = fmtSetting?.value ?? "#,##0.00";
+		const [fmtQtySetting, fmtPriceSetting, fmtAmountSetting] = await Promise.all([
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatQty") }),
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatPrice") }),
+			db.query.appSettings.findFirst({ where: eq(appSettings.key, "formatAmount") }),
+		]);
+		const fmtQty = fmtQtySetting?.value ?? "#,##0.00";
+		const fmtPrice = fmtPriceSetting?.value ?? "#,##0.00";
+		const fmtAmount = fmtAmountSetting?.value ?? "#,##0";
 
 		for (const c of changes) {
-			const qty = roundByFormat(c.tranQty, fmt) ?? 0;
-			const price = roundByFormat(c.tranPrice, fmt) ?? 0;
-			const amount = roundByFormat(qty * price, fmt) ?? 0;
+			const qty = roundByFormat(c.tranQty, fmtQty) ?? 0;
+			const price = roundByFormat(c.tranPrice ?? 0, fmtPrice) ?? 0;
+			const amount = roundByFormat(qty * price, fmtAmount) ?? 0;
 			await db
 				.update(invTran)
 				.set({

@@ -227,6 +227,7 @@
 			selectedIds = new Set();
 			changes = {};
 			qtyDisplays = {};
+			priceDisplays = {};
 		}
 	});
 
@@ -505,7 +506,7 @@
 								<Input
 									type="text"
 									inputmode="decimal"
-									value={priceDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranPrice ?? record.tranPrice, data.formatQty)}
+									value={priceDisplays[record.id] ?? formatStdPrice(changes[record.id]?.tranPrice ?? record.tranPrice, data.formatPrice)}
 									oninput={(e) => {
 										const raw = (e.target as HTMLInputElement).value.replace(/[^0-9.\-]/g, "");
 										priceDisplays[record.id] = raw;
@@ -513,7 +514,7 @@
 									}}
 									onblur={() => {
 										const val = changes[record.id]?.tranPrice ?? record.tranPrice;
-										priceDisplays[record.id] = formatStdPrice(val, data.formatQty);
+										priceDisplays[record.id] = formatStdPrice(val, data.formatPrice);
 									}}
 									class="h-8 text-right text-xs border-amber-400 focus-visible:ring-amber-400"
 								/>
@@ -521,7 +522,7 @@
 						</Table.Cell>
 						<Table.Cell class="text-right">
 							<span class="text-xs text-muted-foreground">
-								{formatStdPrice((changes[record.id]?.tranQty ?? record.tranQty) * (changes[record.id]?.tranPrice ?? record.tranPrice), data.formatQty)}
+								{formatStdPrice((changes[record.id]?.tranQty ?? record.tranQty) * (changes[record.id]?.tranPrice ?? record.tranPrice), data.formatAmount)}
 							</span>
 						</Table.Cell>
 						<Table.Cell>
@@ -564,7 +565,7 @@
 	</div>
 </div>
 
-<InvTranFormDialog bind:open={createOpen} mode="create" formatQty={data.formatQty} itemInfo={data.itemInfo} defaultDt={toDate} />
+<InvTranFormDialog bind:open={createOpen} mode="create" formatQty={data.formatQty} formatPrice={data.formatPrice} formatAmount={data.formatAmount} itemInfo={data.itemInfo} defaultDt={toDate} />
 <DeleteConfirmDialog bind:open={deleteOpen} action="?/delete" id={deleteId} itemName="record" />
 
 <Dialog.Root bind:open={auditOpen}>
