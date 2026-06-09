@@ -277,46 +277,43 @@
 	);
 
 	const sorted = $derived(() => {
-		// Sort records while preserving parent-child hierarchy
-		// When sorting by id, group R03 with its I01 children
-		const arr = [...filtered];
+		// Group R03 with its I01 children, then sort
+		const r03Map = new Map<number, typeof filtered>();
+		const standalone: typeof filtered = [];
 
-		if (sortKey === "id") {
-			// Group by parent-child: R03 and its I01 children should stay together
-			const parentMap = new Map<number, typeof arr>();
-			const standalone: typeof arr = [];
-
-			for (const item of arr) {
-				if (item.tranType === 'R03') {
-					parentMap.set(item.id, [item]);
-				} else if (item.tranType === 'I01' && item.prodId) {
-					const parentId = Number(item.prodId);
-					if (!parentMap.has(parentId)) parentMap.set(parentId, []);
-					parentMap.get(parentId)!.push(item);
-				} else {
-					standalone.push(item);
-				}
+		for (const item of filtered) {
+			if (item.tranType === 'R03') {
+				r03Map.set(item.id, [item]);
+			} else if (item.tranType === 'I01' && item.prodId) {
+				const parentId = Number(item.prodId);
+				if (!r03Map.has(parentId)) r03Map.set(parentId, []);
+				r03Map.get(parentId)!.push(item);
+			} else {
+				standalone.push(item);
 			}
-
-			// Sort by parent id descending (newest first), then combine with standalone
-			const grouped = Array.from(parentMap.entries())
-				.sort(([aId], [bId]) => {
-					const cmp = Number(bId) - Number(aId); // desc by parent id
-					return sortDir === "asc" ? -cmp : cmp;
-				})
-				.flatMap(([, items]) => items);
-
-			return sortDir === "asc" ? [...grouped, ...standalone] : [...grouped, ...standalone];
-		} else {
-			// For other sort keys, sort normally
-			arr.sort((a, b) => {
-				const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
-				const bVal = String((b as Record<string, unknown>)[sortKey] ?? "");
-				const cmp = aVal.localeCompare(bVal);
-				return sortDir === "asc" ? cmp : -cmp;
-			});
-			return arr;
 		}
+
+		// Sort R03 by the selected column
+		const r03Entries = Array.from(r03Map.entries());
+		r03Entries.sort(([aId, aItems], [bId, bItems]) => {
+			const aVal = String((aItems[0] as Record<string, unknown>)[sortKey] ?? "");
+			const bVal = String((bItems[0] as Record<string, unknown>)[sortKey] ?? "");
+			const cmp = aVal.localeCompare(bVal);
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+
+		// Flatten: R03 followed by its I01 children
+		const grouped = r03Entries.flatMap(([, items]) => items);
+
+		// Sort standalone (I02) by selected column
+		standalone.sort((a, b) => {
+			const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
+			const bVal = String((b as Record<string, unknown>)[sortKey] ?? "");
+			const cmp = aVal.localeCompare(bVal);
+			return sortDir === "asc" ? cmp : -cmp;
+		});
+
+		return [...grouped, ...standalone];
 	});
 
 	const paginated = $derived(sorted().slice((currentPage - 1) * pageSize, currentPage * pageSize));
