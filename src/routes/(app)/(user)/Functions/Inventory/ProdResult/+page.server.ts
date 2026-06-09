@@ -124,7 +124,7 @@ export const actions: Actions = {
 			return fail(400, { field: "Tran_qty", message: "Tran Qty must be a non-zero number" });
 		}
 
-		const documentDt = new Date(documentDtStr + "T00:00:00");
+		const documentDt = new Date(documentDtStr + "T12:00:00");
 		const userName = locals.user.name;
 		const now = new Date();
 
@@ -213,7 +213,7 @@ export const actions: Actions = {
 			return fail(400, { field: "Tran_qty", message: "Tran Qty must be a non-zero number" });
 		}
 
-		const documentDt = new Date(documentDtStr + "T00:00:00");
+		const documentDt = new Date(documentDtStr + "T12:00:00");
 
 		const fmtSetting = await db.query.appSettings.findFirst({
 			where: eq(appSettings.key, "formatQty"),
@@ -377,7 +377,7 @@ export const actions: Actions = {
 			await db
 				.update(invTran)
 				.set({
-					documentDt: new Date(c.documentDt + "T00:00:00"),
+					documentDt: new Date(c.documentDt + "T12:00:00"),
 					tranType: c.tranType ?? undefined,
 					tranItem: c.tranItem ?? undefined,
 					tranQty: qty,
@@ -397,7 +397,7 @@ export const actions: Actions = {
 					.from(masterBOM)
 					.where(eq(masterBOM.BOM_item_parent, c.tranItem));
 
-				const r03DocumentDt = new Date(c.documentDt + "T00:00:00");
+				const r03DocumentDt = new Date(c.documentDt + "T12:00:00");
 				for (const bom of bomRecords) {
 					const i01Qty = (bom.BOM_item_qty || 1) * qty;
 					await db
