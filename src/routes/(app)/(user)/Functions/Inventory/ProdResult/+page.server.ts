@@ -55,15 +55,15 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		i01Records = i01Records.filter((r) => r.prodId && r03Ids.includes(Number(r.prodId)));
 	}
 
-	// Get I03 records (also children of R03, like I01)
-	const i03Records = await db
+	// Get I02 records (also displayed but read-only)
+	const i02Records = await db
 		.select()
 		.from(invTran)
-		.where(eq(invTran.tranType, "I03"))
+		.where(eq(invTran.tranType, "I02"))
 		.orderBy(desc(invTran.id));
 
-	// Combine R03, I01, and I03 records
-	const allRecords = [...r03Records, ...i01Records, ...i03Records];
+	// Combine R03, I01, and I02 records
+	const allRecords = [...r03Records, ...i01Records, ...i02Records];
 
 	const formatSetting = await db.query.appSettings.findFirst({
 		where: eq(appSettings.key, "formatQty"),
@@ -251,6 +251,7 @@ export const actions: Actions = {
 				.update(invTran)
 				.set({
 					tranQty: roundByFormat(i01Qty, fmt) ?? 0,
+					documentDt, // Sync documentDt with R03
 					updatedBy: locals.user.name,
 					updatedAt: new Date(),
 				})
@@ -389,19 +390,21 @@ export const actions: Actions = {
 				})
 				.where(eq(invTran.id, c.id));
 
-			// Recalculate associated I01 quantities based on BOM
+			// Recalculate associated I01 quantities and sync documentDt based on BOM
 			if (c.tranItem) {
 				const bomRecords = await db
 					.select()
 					.from(masterBOM)
 					.where(eq(masterBOM.BOM_item_parent, c.tranItem));
 
+				const r03DocumentDt = new Date(c.documentDt + "T00:00:00");
 				for (const bom of bomRecords) {
 					const i01Qty = (bom.BOM_item_qty || 1) * qty;
 					await db
 						.update(invTran)
 						.set({
 							tranQty: roundByFormat(i01Qty, fmt) ?? 0,
+							documentDt: r03DocumentDt, // Sync documentDt with R03
 							updatedBy: locals.user.name,
 							updatedAt: new Date(),
 						})
