@@ -38,7 +38,7 @@
 		defaultDt = "",
 	}: Props = $props();
 
-	const title = $derived(mode === "create" ? "생산입고 추가" : "생산입고 편집");
+	const title = $derived(mode === "create" ? "Add Production Receipt" : "Edit Production Receipt");
 	const action = $derived(mode === "create" ? "?/create" : "?/update");
 
 	const tranItemItems: CodeValue[] = $derived(itemInfo.list);
@@ -135,8 +135,8 @@
 			<Dialog.Title>{title}</Dialog.Title>
 			<Dialog.Description>
 				{mode === "create"
-					? "새로운 생산입고 기록을 생성합니다."
-					: "생산입고 기록을 수정합니다."}
+					? "Create a new production receipt record."
+					: "Modify the production receipt record."}
 			</Dialog.Description>
 		</Dialog.Header>
 		<form
@@ -172,7 +172,7 @@
 					<Label class="font-medium text-amber-600 dark:text-amber-400">Tran Type</Label>
 					<input type="hidden" name="Tran_type" value="R03" />
 					<div class="flex h-10 items-center rounded-md border border-muted-foreground/20 bg-muted/30 px-3 text-sm">
-						생산입고 (R03)
+						Production Receipt (R03)
 					</div>
 				</div>
 				<div class="grid gap-2 relative">

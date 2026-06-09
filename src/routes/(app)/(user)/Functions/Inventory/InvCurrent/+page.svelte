@@ -183,7 +183,7 @@
 	<div class="flex items-center justify-between">
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Inv Current"}</h1>
-			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "재고 현재고"}</p>
+			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "Current Stock"}</p>
 		</div>
 	</div>
 

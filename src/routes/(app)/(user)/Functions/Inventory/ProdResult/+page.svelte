@@ -449,8 +449,8 @@
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "생산입고"}</h1>
-			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "생산입고 관리 (R03 사용자 등록, I01 자동 생성)"}</p>
+			<h1 class="text-3xl font-bold tracking-tight">{data.currentMenu?.name ?? "Production Receipt"}</h1>
+			<p class="text-muted-foreground">{data.currentMenu?.desc ?? "Production receipt management (R03 manual entry, I01 auto-generation)"}</p>
 		</div>
 		<div class="flex items-center gap-2">
 			{#if hasChanges}

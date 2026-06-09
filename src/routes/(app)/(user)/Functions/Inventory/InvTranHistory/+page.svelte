@@ -194,8 +194,8 @@
 <div class="min-w-0 space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">입출고 이력</h1>
-			<p class="text-muted-foreground">입출고 거래 이력 조회</p>
+			<h1 class="text-3xl font-bold tracking-tight">Transaction History</h1>
+			<p class="text-muted-foreground">View inventory transaction history</p>
 		</div>
 	</div>
 
