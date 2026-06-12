@@ -3,6 +3,7 @@ import { users, passwordResetTokens } from "$lib/server/db/schema.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
+import { invalidateUserSessions } from "$lib/server/auth.js";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -64,6 +65,9 @@ export const actions: Actions = {
 			.update(users)
 			.set({ passwordHash, updatedAt: new Date() })
 			.where(eq(users.id, resetToken.userId));
+
+		// Invalidate all existing sessions for the user
+		await invalidateUserSessions(resetToken.userId);
 
 		// Delete used token
 		await db.delete(passwordResetTokens).where(eq(passwordResetTokens.id, resetToken.id));

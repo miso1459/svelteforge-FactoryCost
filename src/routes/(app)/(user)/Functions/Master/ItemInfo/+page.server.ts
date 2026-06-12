@@ -1,6 +1,7 @@
 import { db } from "$lib/server/db/index.js";
 import { masterItem, appSettings, menus } from "$lib/server/db/schema.js";
-import { fail, redirect } from "@sveltejs/kit";
+import { fail, redirect, error } from "@sveltejs/kit";
+import { requireAdminOrEditor } from "$lib/server/auth.js";
 import { eq, inArray, desc, like } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
@@ -18,6 +19,9 @@ function roundByFormat(value: number | null | undefined, format: string): number
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(302, "/login");
+	if (locals.user.role !== "admin" && locals.user.role !== "editor") {
+		error(403, "Admin or editor access required");
+	}
 
 	const allRecords = await db
 		.select()
@@ -41,6 +45,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		let itemCode = formData.get("itemCode");
@@ -116,6 +122,8 @@ export const actions: Actions = {
 
 	update: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const itemCode = formData.get("itemCode");
@@ -166,6 +174,8 @@ export const actions: Actions = {
 
 	delete: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const itemCode = formData.get("id");
@@ -185,6 +195,8 @@ export const actions: Actions = {
 
 	bulkDelete: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const idsRaw = formData.get("ids");
@@ -209,6 +221,8 @@ export const actions: Actions = {
 
 	saveItems: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const changesJson = formData.get("changes") as string | null;

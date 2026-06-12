@@ -59,9 +59,9 @@
 					<!-- TipTap Styled Read-Only Content -->
 					<div
 						class="prose prose-indigo dark:prose-invert prose-lg max-w-none"
-						bind:innerHTML={data.document.content}
-						contenteditable="false"
-					></div>
+					>
+						{@html data.document.content}
+					</div>
 				</div>
 			</article>
 

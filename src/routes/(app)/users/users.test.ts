@@ -123,19 +123,11 @@ describe("Users page", () => {
 		});
 
 		it("prevents deletion of last admin", async () => {
-			const viewerId = await createTestUser(testDb, {
-				email: "viewer@test.com",
-				username: "viewer",
-				role: "viewer",
-			});
-
-			// Try to delete the only admin from the viewer's perspective
-			// (the guard checks the target's role, not the requester's)
 			const formData = createFormData({ id: adminId });
 
 			const result = await actions.delete({
 				request: createMockRequest(formData),
-				locals: createMockLocals(viewerId, "viewer"),
+				locals: createMockLocals(adminId),
 			} as any);
 
 			expect(result).toHaveProperty("status", 400);

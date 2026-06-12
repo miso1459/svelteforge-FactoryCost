@@ -1,11 +1,21 @@
-import { json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { document } from '$lib/server/db/schema';
+import { json, error } from '@sveltejs/kit';
+import { db } from '$lib/server/db/index.js';
+import { document } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import type { RequestHandler } from './$types';
+import type { RequestHandler } from './$types.js';
+
+function requireAdmin(locals: App.Locals) {
+	if (!locals.user) {
+		error(401, 'Authentication required');
+	}
+	if (locals.user!.role !== 'admin') {
+		error(403, 'Admin access required');
+	}
+}
 
 // GET: Fetch a single document by ID
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, locals }) => {
+	requireAdmin(locals);
 	const { id } = params;
 	if (!id) return json({ error: 'ID is required' }, { status: 400 });
 
@@ -23,7 +33,8 @@ export const GET: RequestHandler = async ({ params }) => {
 };
 
 // PUT: Update an existing document
-export const PUT: RequestHandler = async ({ params, request }) => {
+export const PUT: RequestHandler = async ({ params, request, locals }) => {
+	requireAdmin(locals);
 	const { id } = params;
 	if (!id) return json({ error: 'ID is required' }, { status: 400 });
 
@@ -56,7 +67,8 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 };
 
 // DELETE: Delete a document by ID
-export const DELETE: RequestHandler = async ({ params }) => {
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+	requireAdmin(locals);
 	const { id } = params;
 	if (!id) return json({ error: 'ID is required' }, { status: 400 });
 

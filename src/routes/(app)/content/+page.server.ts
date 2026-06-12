@@ -1,10 +1,15 @@
 import { db } from "$lib/server/db/index.js";
 import { pages, users } from "$lib/server/db/schema.js";
-import { fail } from "@sveltejs/kit";
+import { fail, error } from "@sveltejs/kit";
+import { requireAdmin } from "$lib/server/auth.js";
 import { eq, inArray } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (locals.user?.role !== "admin") {
+		error(403, "Admin access required");
+	}
+
 	const allPages = await db
 		.select({
 			id: pages.id,
@@ -25,7 +30,10 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	delete: async ({ request }) => {
+	delete: async ({ request, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
+
 		const formData = await request.formData();
 		const id = formData.get("id");
 
@@ -38,7 +46,10 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	bulkDelete: async ({ request }) => {
+	bulkDelete: async ({ request, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
+
 		const formData = await request.formData();
 		const idsRaw = formData.get("ids");
 

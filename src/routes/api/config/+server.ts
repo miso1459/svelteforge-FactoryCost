@@ -1,13 +1,23 @@
-import { json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { config } from '$lib/server/db/schema';
+import { json, error } from '@sveltejs/kit';
+import { db } from '$lib/server/db/index.js';
+import { config } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import type { RequestHandler } from './$types';
+import type { RequestHandler } from './$types.js';
+
+function requireAdmin(locals: App.Locals) {
+	if (!locals.user) {
+		error(401, 'Authentication required');
+	}
+	if (locals.user!.role !== 'admin') {
+		error(403, 'Admin access required');
+	}
+}
 
 const HOMEPAGE_DOC_KEY = 'homepage_document_id';
 
 // GET: Retrieve the configured homepage document ID
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals }) => {
+	requireAdmin(locals);
 	try {
 		const result = await db
 			.select()
@@ -26,7 +36,8 @@ export const GET: RequestHandler = async () => {
 };
 
 // POST: Save or update the homepage document ID
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	requireAdmin(locals);
 	try {
 		const body = await request.json();
 		const { value } = body;

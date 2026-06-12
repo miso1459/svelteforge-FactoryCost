@@ -1,9 +1,14 @@
 import { db } from "$lib/server/db/index.js";
 import { users, pages, notifications } from "$lib/server/db/schema.js";
+import { error } from "@sveltejs/kit";
 import { sql, eq } from "drizzle-orm";
 import type { PageServerLoad } from "./$types.js";
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	if (locals.user?.role !== "admin") {
+		error(403, "Admin access required");
+	}
+
 	// User signups per month
 	const signupsPerMonth = await db
 		.select({

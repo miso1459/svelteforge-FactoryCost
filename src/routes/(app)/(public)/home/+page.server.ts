@@ -1,7 +1,8 @@
-import { db } from '$lib/server/db';
-import { document, config } from '$lib/server/db/schema';
+import { db } from '$lib/server/db/index.js';
+import { document, config } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import type { PageServerLoad } from './$types';
+import DOMPurify from 'isomorphic-dompurify';
+import type { PageServerLoad } from './$types.js';
 
 const HOMEPAGE_DOC_KEY = 'homepage_document_id';
 
@@ -35,7 +36,7 @@ export const load: PageServerLoad = async () => {
 			document: {
 				id: docResult[0].id,
 				title: docResult[0].title,
-				content: docResult[0].content,
+				content: DOMPurify.sanitize(docResult[0].content ?? ''),
 				updatedAt: docResult[0].updatedAt.toISOString() // Serialize date for transmission
 			}
 		};

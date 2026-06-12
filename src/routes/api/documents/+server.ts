@@ -1,11 +1,21 @@
-import { json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { document } from '$lib/server/db/schema';
+import { json, error } from '@sveltejs/kit';
+import { db } from '$lib/server/db/index.js';
+import { document } from '$lib/server/db/schema.js';
 import { desc } from 'drizzle-orm';
-import type { RequestHandler } from './$types';
+import type { RequestHandler } from './$types.js';
+
+function requireAdmin(locals: App.Locals) {
+	if (!locals.user) {
+		error(401, 'Authentication required');
+	}
+	if (locals.user!.role !== 'admin') {
+		error(403, 'Admin access required');
+	}
+}
 
 // GET: Retrieve all documents, ordered by updatedAt descending
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals }) => {
+	requireAdmin(locals);
 	try {
 		const docs = await db.select().from(document).orderBy(desc(document.updatedAt));
 		return json(docs);
@@ -15,7 +25,8 @@ export const GET: RequestHandler = async () => {
 };
 
 // POST: Create a new document
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	requireAdmin(locals);
 	try {
 		const body = await request.json();
 		const { title, content } = body;

@@ -2,7 +2,8 @@ import { db } from "$lib/server/db/index.js";
 import { masterBOM, masterItem, menus, appSettings } from "$lib/server/db/schema.js";
 import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
 import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
-import { fail, redirect } from "@sveltejs/kit";
+import { fail, redirect, error } from "@sveltejs/kit";
+import { requireAdminOrEditor } from "$lib/server/auth.js";
 import { eq, inArray, count } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
@@ -137,6 +138,9 @@ function validateBOM(
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) redirect(302, "/login");
+	if (locals.user.role !== "admin" && locals.user.role !== "editor") {
+		error(403, "Admin or editor access required");
+	}
 
 	const flatBOM = await db
 		.select()
@@ -181,6 +185,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const BOM_item_parent = formData.get("BOM_item_parent") as string | null;
@@ -254,6 +260,8 @@ export const actions: Actions = {
 
 	update: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const id = parseInt(formData.get("id") as string);
@@ -316,6 +324,8 @@ export const actions: Actions = {
 
 	delete: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const idRaw = formData.get("id") as string | null;
@@ -350,6 +360,8 @@ export const actions: Actions = {
 
 	bulkDelete: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const idsRaw = formData.get("ids") as string | null;
@@ -398,6 +410,8 @@ export const actions: Actions = {
 
 	reorderBOM: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const updatesJson = formData.get("updates") as string | null;
@@ -450,6 +464,8 @@ export const actions: Actions = {
 
 	saveBOM: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdminOrEditor(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const changesJson = formData.get("changes") as string | null;

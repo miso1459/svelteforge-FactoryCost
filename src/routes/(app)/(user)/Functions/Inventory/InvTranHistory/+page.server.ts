@@ -1,12 +1,15 @@
 import { db } from "$lib/server/db/index.js";
 import { invTran, appSettings, menus } from "$lib/server/db/schema.js";
-import { redirect } from "@sveltejs/kit";
+import { redirect, error } from "@sveltejs/kit";
 import { eq, desc } from "drizzle-orm";
 import type { PageServerLoad } from "./$types.js";
 import { getItemInfo } from "$lib/(user)/Common/DropdownItemInfo.js";
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) redirect(302, "/login");
+	if (locals.user.role !== "admin" && locals.user.role !== "editor") {
+		error(403, "Admin or editor access required");
+	}
 
 	const allRecords = await db
 		.select()

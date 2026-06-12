@@ -1,8 +1,9 @@
 import { db } from "$lib/server/db/index.js";
 import { menus } from "$lib/server/db/schema.js";
 import { generateId } from "$lib/server/id.js";
+import { requireAdmin } from "$lib/server/auth.js";
 import { eq, inArray, count } from "drizzle-orm";
-import { fail, redirect } from "@sveltejs/kit";
+import { fail, redirect, error } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types.js";
 
 type FlatMenu = typeof menus.$inferSelect;
@@ -35,6 +36,7 @@ function buildTree(flat: FlatMenu[]): MenuTreeNode[] {
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) redirect(302, "/login");
+	if (locals.user.role !== "admin") error(403, "Admin access required");
 
 	const flatMenus = await db
 		.select()
@@ -49,6 +51,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const type = formData.get("type") as string | null;
@@ -98,6 +102,8 @@ export const actions: Actions = {
 
 	update: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const id = formData.get("id") as string | null;
@@ -146,6 +152,8 @@ export const actions: Actions = {
 
 	delete: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const id = formData.get("id") as string | null;
@@ -174,6 +182,8 @@ export const actions: Actions = {
 
 	bulkDelete: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const idsRaw = formData.get("ids") as string | null;
@@ -215,6 +225,8 @@ export const actions: Actions = {
 
 	reorderMenu: async ({ request, locals }) => {
 		if (!locals.user) redirect(302, "/login");
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
 
 		const formData = await request.formData();
 		const updatesJson = formData.get("updates") as string | null;

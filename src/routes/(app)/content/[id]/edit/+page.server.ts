@@ -1,10 +1,15 @@
 import { db } from "$lib/server/db/index.js";
 import { pages } from "$lib/server/db/schema.js";
 import { fail, redirect, error } from "@sveltejs/kit";
+import { requireAdmin } from "$lib/server/auth.js";
 import { eq } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types.js";
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (locals.user?.role !== "admin") {
+		error(403, "Admin access required");
+	}
+
 	const [page] = await db.select().from(pages).where(eq(pages.id, params.id));
 
 	if (!page) {
@@ -24,7 +29,10 @@ function slugify(text: string): string {
 }
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
+		const denied = requireAdmin(locals);
+		if (denied) return denied;
+
 		const formData = await request.formData();
 		const title = formData.get("title");
 		const slug = formData.get("slug");

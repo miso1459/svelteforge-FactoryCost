@@ -4,6 +4,7 @@ import { db } from "./db/index.js";
 import { sessions, users } from "./db/schema.js";
 import { eq } from "drizzle-orm";
 import { dev } from "$app/environment";
+import { fail } from "@sveltejs/kit";
 import type { Cookies } from "@sveltejs/kit";
 import type { User, Session } from "./db/schema.js";
 
@@ -19,6 +20,26 @@ export type SessionUser = Pick<User, "id" | "email" | "username" | "name" | "rol
 export type SessionValidationResult =
 	| { session: Session; user: SessionUser }
 	| { session: null; user: null };
+
+export function requireAdmin(locals: App.Locals): ReturnType<typeof fail> | null {
+	if (!locals.user) {
+		return fail(401, { message: "Authentication required" });
+	}
+	if (locals.user.role !== "admin") {
+		return fail(403, { message: "Admin access required" });
+	}
+	return null;
+}
+
+export function requireAdminOrEditor(locals: App.Locals): ReturnType<typeof fail> | null {
+	if (!locals.user) {
+		return fail(401, { message: "Authentication required" });
+	}
+	if (locals.user.role !== "admin" && locals.user.role !== "editor") {
+		return fail(403, { message: "Admin or editor access required" });
+	}
+	return null;
+}
 
 export function generateSessionToken(): string {
 	const bytes = new Uint8Array(20);
@@ -97,6 +118,10 @@ export async function validateSession(token: string): Promise<SessionValidationR
 
 export async function invalidateSession(sessionId: string): Promise<void> {
 	await db.delete(sessions).where(eq(sessions.id, sessionId));
+}
+
+export async function invalidateUserSessions(userId: string): Promise<void> {
+	await db.delete(sessions).where(eq(sessions.userId, userId));
 }
 
 export function setSessionCookie(cookies: Cookies, token: string, expiresAt: number): void {
