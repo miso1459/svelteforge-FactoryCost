@@ -23,7 +23,7 @@ const providers = $derived((data.enabledProviders ?? []).filter((provider) => pr
 					<ZapIcon class="size-6" />
 				</div>
 			</div>
-		<Card.Title class="text-2xl font-bold">Welcome Facktory Cost</Card.Title>
+		<Card.Title class="text-2xl font-bold">Welcome Factory Cost</Card.Title>
 		<Card.Description>Continue with Google to access the application</Card.Description>
 		</Card.Header>
 		<Card.Content>

@@ -14,9 +14,11 @@ vi.mock("$lib/server/db/index.js", () => ({
 }));
 
 vi.mock("$lib/server/auth.js", () => ({
-	lucia: {
-		invalidateSession: vi.fn(),
-	},
+	invalidateSession: vi.fn(),
+	invalidateUserSessions: vi.fn(),
+	requireAdmin: (locals: any) => locals?.user?.role === "admin" ? undefined : { status: 403, data: { message: "Forbidden" } },
+	requireAdminOrEditor: (locals: any) =>
+		["admin", "editor"].includes(locals?.user?.role) ? undefined : { status: 403, data: { message: "Forbidden" } },
 }));
 
 describe("Settings page server", () => {

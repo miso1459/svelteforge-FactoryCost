@@ -15,20 +15,22 @@ export function parseUserAgent(ua: string | null): ParsedUA {
 }
 
 function parseBrowser(ua: string): string {
-	if (/Edg\/(\d+)/.test(ua)) return `Edge ${RegExp.$1}`;
-	if (/OPR\/(\d+)/.test(ua)) return `Opera ${RegExp.$1}`;
-	if (/Chrome\/(\d+)/.test(ua)) return `Chrome ${RegExp.$1}`;
-	if (/Firefox\/(\d+)/.test(ua)) return `Firefox ${RegExp.$1}`;
-	if (/Safari\/(\d+)/.test(ua) && /Version\/(\d+)/.test(ua)) return `Safari ${RegExp.$1}`;
+	let m: RegExpMatchArray | null;
+	if ((m = ua.match(/Edg\/(\d+)/))) return `Edge ${m[1]}`;
+	if ((m = ua.match(/OPR\/(\d+)/))) return `Opera ${m[1]}`;
+	if ((m = ua.match(/Chrome\/(\d+)/))) return `Chrome ${m[1]}`;
+	if ((m = ua.match(/Firefox\/(\d+)/))) return `Firefox ${m[1]}`;
+	if ((m = ua.match(/Version\/(\d+)/))) return `Safari ${m[1]}`;
 	return "Unknown";
 }
 
 function parseOS(ua: string): string {
+	let m: RegExpMatchArray | null;
 	if (/Windows NT 10/.test(ua)) return "Windows 10+";
 	if (/Windows NT/.test(ua)) return "Windows";
-	if (/Mac OS X (\d+[._]\d+)/.test(ua)) return `macOS ${RegExp.$1.replace(/_/g, ".")}`;
-	if (/Android (\d+)/.test(ua)) return `Android ${RegExp.$1}`;
-	if (/iPhone OS (\d+)/.test(ua)) return `iOS ${RegExp.$1}`;
+	if ((m = ua.match(/Mac OS X (\d+[._]\d+)/))) return `macOS ${m[1].replace(/_/g, ".")}`;
+	if ((m = ua.match(/Android (\d+)/))) return `Android ${m[1]}`;
+	if ((m = ua.match(/iPhone OS (\d+)/))) return `iOS ${m[1]}`;
 	if (/iPad/.test(ua)) return "iPadOS";
 	if (/Linux/.test(ua)) return "Linux";
 	if (/CrOS/.test(ua)) return "ChromeOS";

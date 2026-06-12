@@ -10,6 +10,7 @@
 	import { enhance } from "$app/forms";
 	import XIcon from "@lucide/svelte/icons/x";
 	import PlusIcon from "@lucide/svelte/icons/plus";
+	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import { parseFormatPattern, formatStdPrice } from "$lib/utils/format.js";
 
 	type MasterItemData = {
@@ -271,8 +272,13 @@
 					Cancel
 				</Button>
 				<Button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white">
-					<PlusIcon class="mr-2 size-4" />
-					Add
+					{#if mode === "edit"}
+						<PencilIcon class="mr-2 size-4" />
+						Edit
+					{:else}
+						<PlusIcon class="mr-2 size-4" />
+						Add
+					{/if}
 				</Button>
 			</Dialog.Footer>
 		</form>
