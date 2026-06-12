@@ -6,7 +6,11 @@
 	"packageManager": "pnpm@10.28.1",
 	"scripts": {
 		"dev": "vite dev --port 5177",
-		"build": "vite build",
+
+		"build": "vite build --outDir dist_temp",
+		"deploy": "pnpm run build && robocopy dist_temp deploy /E /IS /IT & pm2 reload all",
+		"update": "git fetch --all && git reset --hard origin/main && pnpm install && pnpm run deploy",
+
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

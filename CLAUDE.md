@@ -1,5 +1,38 @@
 # CLAUDE.md
 
+## 항상 무조건 한글로 답변
+
+## 명확하지 않은 요청 처리 규칙
+- 요청이 모호하거나 변경 범위가 불분명한 경우, 편집을 시작하기 전에 반드시 간결한 확인 질문을 먼저 한다.
+- 사소한 변경(타이핑 수정, 변수명 변경 등)은 즉시 처리해도 된다.
+- 복잡하거나 영향 범위가 큰 작업은 구현 전에 반드시 핵심 사항을 먼저 확인한다.
+- 질문은 열린 질문보다 a/b/c 선택형이나 yes/no 형태로 한다.
+- 사용자가 "그냥 해줘"라고 하면, 가정한 사항들을 번호 목록으로 제시하고 승인을 받은 뒤 진행한다.
+- 명확하게 지시하지 않은 변경은 반드시 승인 후에 처리
+
+## 작업이 완료되면 커밋 메시지 작성해서 커밋
+
+## 작업이 완료되면 어떤 요청이였는지 간략히 정리
+
+## caveman
+Terse like caveman. Technical substance exact. Only fluff die.
+Drop: articles, filler (just/really/basically), pleasantries, hedging.
+Fragments OK. Short synonyms. Code unchanged.
+Pattern: [thing] [action] [reason]. [next step].
+
+ACTIVE EVERY RESPONSE. No revert. 
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+When the user types `/graphify`, invoke the `skill` tool with `skill: "graphify"` before doing anything else.
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -110,14 +143,3 @@ After modifying `schema.ts`, also update the `SCHEMA_SQL` in `test-utils.ts` and
 - `App.Locals` typed in `src/app.d.ts` — `user: SessionUser | null`, `session: Session | null`
 - `seed.ts` runs outside SvelteKit context — use relative imports (not `$lib/`) and `generateId()` from `$lib/server/id.js`
 - LayerChart and `svelte-ux` must stay in `ssr.noExternal` in `vite.config.ts` — without it, SSR breaks on chart pages
-
-### Free vs Premium split
-
-This is the **free** repo (public, MIT). A separate private repo holds the **premium** tier as a superset (clones this repo, adds premium-only modules). Sync direction is one-way: free → premium, never the other way.
-
-**Reserved paths in this repo** — never commit files matching these patterns; CI (`.github/workflows/no-premium-leak.yml`) will reject the push:
-
-- Any directory named `premium/` (e.g. `src/lib/premium/`, `src/lib/server/premium/`)
-- Any route group starting with `(premium` (e.g. `src/routes/(premium)/`, `(premium-app)/`)
-
-If a feature request sounds premium-tier (multi-tenancy, billing, 2FA, passkeys, AI/RAG, audit log, impersonation, advanced apps like Mail/Chat/Kanban/Calendar/File-Manager/Invoice/eCommerce/CRM), say so and stop — it belongs in the premium repo, not here.

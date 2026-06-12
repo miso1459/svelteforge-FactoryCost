@@ -1,165 +1,87 @@
-# AGENTS.md
+# Project Context: SvelteKit Web Application
 
-This file provides guidance to Ai agent when working with code in this repository.
-
-## Project Overview
-
-SvelteForge Factory Cost is a SvelteKit admin dashboard using Svelte 5, Tailwind CSS v4, custom session-based auth with Arctic OAuth, and Drizzle ORM with SQLite.
-
-## Commands
-
-```bash
-pnpm dev              # Start dev server
-pnpm build            # Production build
-pnpm preview          # Preview production build
-pnpm check            # Type-check with svelte-check
-pnpm check:watch      # Type-check in watch mode
-
-pnpm db:generate      # Generate Drizzle migrations from schema
-pnpm db:push          # Push schema changes directly to database
-pnpm db:studio        # Open Drizzle Studio GUI
-pnpm db:seed          # Seed database with sample data (npx tsx)
-
-pnpm test             # Run all unit tests (Vitest)
-pnpm test:watch       # Run tests in watch mode
-pnpm test:e2e         # Run E2E tests (Playwright)
-
-# Run a single test file
-npx vitest run src/routes/\(app\)/users/users.test.ts
-
-pnpm lint             # ESLint
-pnpm format           # Prettier (write)
-pnpm format:check     # Prettier (check only)
-```
-
-## Architecture
-
-### Tech Stack
-
-- **Svelte 5** with runes API (`$props`, `$state`, `$derived`, `{@render}`)
-- **Tailwind CSS v4** — native CSS with `@theme` directive in `src/app.css`, no JS config file. OKLCH color system
-- **shadcn-svelte** — UI components in `$lib/components/ui/`, added via `npx shadcn-svelte@latest add <component>`
-- **Custom session auth** — SHA-256 hashed tokens with @oslojs/crypto, Argon2id password hashing, optional OAuth via Arctic (Google, GitHub)
-- **Drizzle ORM** — SQLite with better-sqlite3, WAL mode. Schema in `src/lib/server/db/schema.ts`
-- **LayerChart v2** — D3-based charts. Marked `noExternal` in `vite.config.ts` alongside `svelte-ux` for SSR compatibility
-- **Package manager:** pnpm
-
-### Routing & Auth
-
-Routes use SvelteKit route groups for layout separation:
-
-- `(app)/` — Protected routes. Auth guard in `(app)/+layout.server.ts` redirects unauthenticated users to `/login`
-- `(auth)/` — Public auth routes (login, register, OAuth callbacks at `login/google/`, `login/github/`)
-- `(public)/` — Public pages (pricing)
-- `logout/` — Standalone logout action (server-only)
-- `api/search/` — Search endpoint for command palette
-- `sitemap.xml/` — Auto-generated sitemap
-
-Session validation runs on every request via `hooks.server.ts`, populating `event.locals.user` and `event.locals.session`. OAuth providers are environment-driven — see `.env.example` for configuration.
-
-`event.locals.user` is `SessionUser` (a subset of `User` — no `passwordHash`, no timestamps). Use the full `User` type only when querying the DB directly.
-
-Sessions live 30 days and auto-extend whenever a request arrives with <15 days remaining (logic in `validateSession`). The cookie holds the raw token; the DB stores its SHA-256 hash as the session ID — a leaked DB cannot be used to forge sessions.
-
-The `(app)/+layout.server.ts` guard also enforces **maintenance mode**: when `appSettings.maintenanceMode === "true"`, non-admin users get a 503. Admins bypass it.
-
-### Key Directories
-
-- `src/lib/server/` — Server-only code (auth, OAuth, database). Never import from client-side code
-- `src/lib/server/auth.ts` — Session management (create, validate, invalidate, cookies)
-- `src/lib/server/oauth.ts` — Arctic OAuth providers (conditional on env vars)
-- `src/lib/server/db/schema.ts` — Drizzle schema (users, sessions, pages, notifications, oauthAccounts, appSettings, passwordResetTokens)
-- `src/lib/server/db/seed.ts` — Database seeder (run via `pnpm db:seed`, uses `npx tsx` not SvelteKit aliases)
-- `src/lib/server/id.ts` — Crypto ID generator (`generateId()`)
-- `src/lib/components/ui/` — shadcn-svelte components (don't edit directly, re-add to update)
-- `src/lib/components/` — App-level components (sidebar, theme toggle, command palette, notification bell)
-- `src/lib/hooks/` — Svelte 5 reactive utilities (e.g., `is-mobile.svelte.ts`)
-- `src/lib/utils.ts` — `cn()` helper (clsx + tailwind-merge) and component type utilities
-- `src/lib/utils/` — Export utilities (CSV/JSON), user-agent parser
-
-### Database
-
-SQLite database file: `svelteforge.db` (project root, gitignored). Roles enum: `admin | editor | viewer`. First registered user gets `admin` role.
-
-**Notifications with `userId = NULL` are global** — every user sees them. Per-user notifications set `userId` to the recipient. The `(app)/+layout.server.ts` filter (`eq(userId, X) OR isNull(userId)`) is the canonical pattern for any notification query.
-
-### Testing
-
-Tests co-locate with their route: e.g., `src/routes/(app)/users/users.test.ts` tests the `users/+page.server.ts` load and actions.
-
-**Test DB pattern:** Tests mock `$lib/server/db/index.js` with a getter that returns an in-memory SQLite database created via `createTestDb()` from `test-utils.ts`. The mock must be set up before dynamically importing the server module:
-
-```ts
-vi.mock("$lib/server/db/index.js", () => ({
-	get db() {
-		return testDb;
-	},
-}));
-const { load, actions } = await import("./+page.server.js");
-```
-
-After modifying `schema.ts`, also update the `SCHEMA_SQL` in `test-utils.ts` and run `pnpm db:push`.
-
-`test-utils.ts` also exports `createTestUser(db, overrides)`, `createMockLocals(userId, role)`, `createFormData(entries)`, and `createMockRequest(formData)` — use these instead of hand-rolling fixtures in each test. `createTestUser` hashes `"password123"` with the same Argon2id parameters used in production.
-
-### Patterns
-
-- Forms use SvelteKit form actions with `use:enhance` for progressive enhancement
-- Dark/light mode via `mode-watcher` — use `mode.current` (runes object), NOT `$mode`
-- App shell layout: sidebar (`app-sidebar.svelte`) + topbar with breadcrumbs (generated from URL pathname)
-- `App.Locals` typed in `src/app.d.ts` — `user: SessionUser | null`, `session: Session | null`
-- `seed.ts` runs outside SvelteKit context — use relative imports (not `$lib/`) and `generateId()` from `$lib/server/id.js`
-- LayerChart and `svelte-ux` must stay in `ssr.noExternal` in `vite.config.ts` — without it, SSR breaks on chart pages
+## 항상 무조건 한글로 답변
 
 ## 명확하지 않은 요청 처리 규칙
-
 - 요청이 모호하거나 변경 범위가 불분명한 경우, 편집을 시작하기 전에 반드시 간결한 확인 질문을 먼저 한다.
 - 사소한 변경(타이핑 수정, 변수명 변경 등)은 즉시 처리해도 된다.
 - 복잡하거나 영향 범위가 큰 작업은 구현 전에 반드시 핵심 사항을 먼저 확인한다.
 - 질문은 열린 질문보다 a/b/c 선택형이나 yes/no 형태로 한다.
 - 사용자가 "그냥 해줘"라고 하면, 가정한 사항들을 번호 목록으로 제시하고 승인을 받은 뒤 진행한다.
+- 명확하게 지시하지 않은 변경은 반드시 승인 후에 처리
 
-## 작업 완료되면 커밋
+## 작업이 완료되면 커밋 메시지 작성해서 커밋
 
-<!-- headroom:rtk-instructions -->
-# RTK (Rust Token Killer) - Token-Optimized Commands
+## 작업이 완료되면 어떤 요청이였는지 간략히 정리
 
-When running shell commands, **always prefix with `rtk`**. This reduces context
-usage by 60-90% with zero behavior change. If rtk has no filter for a command,
-it passes through unchanged — so it is always safe to use.
+## caveman
+Terse like caveman. Technical substance exact. Only fluff die.
+Drop: articles, filler (just/really/basically), pleasantries, hedging.
+Fragments OK. Short synonyms. Code unchanged.
+Pattern: [thing] [action] [reason]. [next step].
 
-## Key Commands
-```bash
-# Git (59-80% savings)
-rtk git status          rtk git diff            rtk git log
+ACTIVE EVERY RESPONSE. No revert. 
 
-# Files & Search (60-75% savings)
-rtk ls <path>           rtk read <file>         rtk grep <pattern>
-rtk find <pattern>      rtk diff <file>
+## graphify
 
-# Test (90-99% savings) — shows failures only
-rtk pytest tests/       rtk cargo test          rtk test <cmd>
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+When the user types `/graphify`, invoke the `skill` tool with `skill: "graphify"` before doing anything else.
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 
-# Build & Lint (80-90% savings) — shows errors only
-rtk tsc                 rtk lint                rtk cargo build
-rtk prettier --check    rtk mypy                rtk ruff check
+## Tech Stack
+- Framework: SvelteKit (Version 2+)
+- Component Framework: Svelte 5 (Using Runes)
+- Language: TypeScript
+- Package Manager: pnpm
 
-# Analysis (70-90% savings)
-rtk err <cmd>           rtk log <file>          rtk json <file>
-rtk summary <cmd>       rtk deps                rtk env
+## Core Development Rules (Crucial)
 
-# GitHub (26-87% savings)
-rtk gh pr view <n>      rtk gh run list         rtk gh issue list
+### 1. Svelte 5 Runes Only
+- Do NOT use `export let prop`. Always use `const { prop1, prop2 } = $props();`.
+- Do NOT use `let count = 0` for reactive variables. Always use `let count = $state(0);`.
+- Use `$derived()` instead of `$: values = ...`.
+- Use `$effect()` instead of `$: { ... }` side effects.
 
-# Infrastructure (85% savings)
-rtk docker ps           rtk kubectl get         rtk docker logs <c>
+### 2. SvelteKit Directory-Based Routing
+- Every route must be placed under `src/routes/`.
+- Server-side data fetching MUST happen in `+page.server.ts` using the `load` function.
+- UI rendering MUST happen in `+page.svelte`.
+- Type definitions for data should leverage generated `./$types`.
 
-# Package managers (70-90% savings)
-rtk pip list            rtk pnpm install        rtk npm run <script>
-```
+### 3. State & Data Flow
+- Page data from server load functions must be received in `+page.svelte` via:
+  ```ts
+  const { data } = $props();
+  ```
 
-## Rules
-- In command chains, prefix each segment: `rtk git add . && rtk git commit -m "msg"`
-- For debugging, use raw command without rtk prefix
-- `rtk proxy <cmd>` runs command without filtering but tracks usage
-<!-- /headroom:rtk-instructions -->
+## Current Goals
+- [ ] Implement user authentication layout
+- [ ] Connect database to `+page.server.ts`
+
+# Global Technology & UI System Constraints
+
+## Core Framework
+- The default development environment for all projects is **Svelte / SvelteKit**.
+- Never assume or generate React, Next.js, or Vue-based code unless explicitly requested by the user.
+
+## UI Component Library (MANDATORY)
+- You must exclusively use **shadcn-svelte** (https://shadcn-svelte.com) for all UI components and design systems.
+- **Strict Prohibition:** Never reference, import, or generate code based on the React version of shadcn/ui.
+
+## Coding & Import Standards
+- Always use SvelteKit standard path aliases for UI components. Component imports must follow this structure:
+  `import { ComponentName } from "$lib/components/ui/component-name";`
+- Ensure all component state management and reactivity follow Svelte-native syntax (e.g., Svelte 5 Runes or Svelte 4 stores, depending on the project context).
+- Use `lucide-svelte` as the primary icon library when icons are required.
+
+## CLI Execution Rules
+- When asked to add or install new UI components, always propose or execute the Svelte-specific CLI command:
+  `npx shadcn-svelte@latest add [component-name]`
+- Never use `npx shadcn@latest add` or `npx shadcn-ui@latest add`.
+
+# DESIGN.md 파일 필수 참조
