@@ -28,8 +28,10 @@ import { Label } from "$lib/components/ui/label/index.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { ITEM_ACCT, UNIT } from "$lib/(user)/Common/DropdownLists.js";
 	import { formatStdPrice } from "$lib/utils/format.js";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 
 	let search = $state("");
 	let createOpen = $state(false);

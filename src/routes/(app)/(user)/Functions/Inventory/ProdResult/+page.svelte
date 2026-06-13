@@ -30,8 +30,10 @@
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { formatStdPrice } from "$lib/utils/format.js";
 	import { SvelteSet } from "svelte/reactivity";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 	// data.records: InvTran[]
 	// data.formatQty: string
 	// data.currentMenu: { name, desc } | null
@@ -63,12 +65,11 @@
 	let selectedIds = $state(new Set<string>());
 
 	// ── Parent-Child Expand State ──────────────────────────────────────────
-	let expanded = new SvelteSet<number>();
+	const expanded = new SvelteSet<number>();
 
 	function toggleExpand(id: number) {
 		if (expanded.has(id)) expanded.delete(id);
 		else expanded.add(id);
-		expanded = expanded; // trigger reactivity
 	}
 
 	// ── Records with depth (parent-child hierarchy) ────────────────────────

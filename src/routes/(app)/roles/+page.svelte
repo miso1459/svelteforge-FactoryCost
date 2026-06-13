@@ -9,8 +9,10 @@
 	import UsersIcon from "@lucide/svelte/icons/users";
 	import CheckIcon from "@lucide/svelte/icons/check";
 	import { toast } from "svelte-sonner";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 
 	let roleChangeOpen = $state(false);
 	let roleChangeUser = $state({ id: "", name: "", role: "" });

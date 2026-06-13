@@ -8,8 +8,9 @@
 	import { enhance } from "$app/forms";
 	import { toast } from "svelte-sonner";
 	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import type { ActionResult } from "$lib/types/form.js";
 
-	let { form } = $props();
+	let { form }: { form: ActionResult } = $props();
 
 	let title = $state("");
 	let slug = $state("");

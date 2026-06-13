@@ -17,8 +17,10 @@
 	import { toast } from "svelte-sonner";
 	import { enhance } from "$app/forms";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 
 	let search = $state("");
 	let deleteOpen = $state(false);

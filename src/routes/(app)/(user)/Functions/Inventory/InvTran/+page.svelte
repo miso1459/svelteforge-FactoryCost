@@ -27,8 +27,10 @@
 	import { TRAN_TYPE, type CodeValue } from "$lib/(user)/Common/DropdownLists.js";
 	import SearchableSelect from "$lib/components/searchable-select.svelte";
 	import { formatStdPrice } from "$lib/utils/format.js";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 	// data.records: InvTran[]
 	// data.formatQty: string
 	// data.currentMenu: { name, desc } | null

@@ -9,8 +9,10 @@
 	import { toast } from "svelte-sonner";
 	import { untrack } from "svelte";
 	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 
 	let title = $state(untrack(() => data.page.title));
 	let slug = $state(untrack(() => data.page.slug));

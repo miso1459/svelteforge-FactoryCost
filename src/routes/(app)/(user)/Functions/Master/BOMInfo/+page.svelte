@@ -30,8 +30,10 @@ import BOMCreateDialog from "./bom-create-dialog.svelte";
 	import { exportToCSV, exportToJSON } from "$lib/utils/export.js";
 	import { ITEM_ACCT } from "$lib/(user)/Common/DropdownLists.js";
 	import { SvelteSet } from "svelte/reactivity";
+	import type { ActionResult } from "$lib/types/form.js";
+	import type { PageData } from "./$types.js";
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionResult } = $props();
 
 	// ── Type helpers ──────────────────────────────────────────────────────────
 	type BOMFlat = (typeof data.flatBOM)[number];
