@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { FileText, Sparkles, Calendar, ArrowRight, BookOpen } from "@lucide/svelte";
-	import type { Pathname } from "$app/types";
 	import { resolve } from "$app/paths";
 
 	// Svelte 5 Runes Props
@@ -69,7 +68,7 @@
 				<!-- Quick Editor Action (Floating Button style) -->
 				<div class="mt-2 flex justify-center">
 					<a
-						href={resolve("/Common/ContentsEditor" as Pathname)}
+						href={resolve("/Common/ContentsEditor")}
 						class="inline-flex transform cursor-pointer items-center gap-2 rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-slate-900/10 transition-all duration-300 hover:scale-[1.02] hover:bg-slate-800 dark:bg-slate-800 dark:shadow-none dark:hover:bg-slate-700"
 					>
 						<span>대표 문서 수정하기</span>
@@ -104,7 +103,7 @@
 
 				<div class="mt-2 flex flex-col gap-3 sm:flex-row">
 					<a
-						href={resolve("/Common/ContentsEditor" as Pathname)}
+						href={resolve("/Common/ContentsEditor")}
 						class="inline-flex transform cursor-pointer items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-indigo-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-indigo-500/10 transition-all duration-300 hover:scale-[1.02] hover:from-indigo-600 hover:to-purple-700 hover:shadow-indigo-500/20"
 					>
 						<span>문서 편집기 바로가기</span>
