@@ -93,7 +93,8 @@ export const actions: Actions = {
 				updatedBy: userName,
 				updatedAt: now,
 			});
-		} catch {
+		} catch (err) {
+			console.error("create menu failed:", err);
 			return fail(400, { message: "Failed to create menu" });
 		}
 
@@ -143,7 +144,8 @@ export const actions: Actions = {
 					updatedAt: new Date(),
 				})
 				.where(eq(menus.id, id));
-		} catch {
+		} catch (err) {
+			console.error("update menu failed:", err);
 			return fail(400, { message: "Update failed" });
 		}
 
@@ -173,7 +175,8 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(menus).where(eq(menus.id, id));
-		} catch {
+		} catch (err) {
+			console.error("delete menu failed:", err);
 			return fail(400, { message: "Delete failed" });
 		}
 
@@ -216,7 +219,8 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(menus).where(inArray(menus.id, deleteIds));
-		} catch {
+		} catch (err) {
+			console.error("bulkDelete menu failed:", err);
 			return fail(400, { message: "Bulk delete failed" });
 		}
 
@@ -236,7 +240,13 @@ export const actions: Actions = {
 		}
 
 		type ReorderItem = { id: string; parentId: string | null; sort_order: number };
-		const updates: ReorderItem[] = JSON.parse(updatesJson);
+		let updates: ReorderItem[];
+		try {
+			updates = JSON.parse(updatesJson);
+		} catch (err) {
+			console.error("reorderMenu JSON parse failed:", err);
+			return fail(400, { message: "Invalid updates data format." });
+		}
 
 		for (const u of updates) {
 			await db

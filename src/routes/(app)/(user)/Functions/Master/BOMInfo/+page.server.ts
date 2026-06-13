@@ -250,7 +250,8 @@ export const actions: Actions = {
 				updatedBy: userName,
 				updatedAt: now,
 			});
-		} catch {
+		} catch (err) {
+			console.error("create BOM failed:", err);
 			const itemLabel = itemsMap[BOM_item]?.itemDesc ?? BOM_item;
 			return fail(400, { message: `Failed to create '${itemLabel}'.` });
 		}
@@ -314,7 +315,8 @@ export const actions: Actions = {
 					updatedAt: new Date(),
 				})
 				.where(eq(masterBOM.id, id));
-		} catch {
+		} catch (err) {
+			console.error("update BOM failed:", err);
 			const itemLabel = itemsMap[BOM_item]?.itemDesc ?? BOM_item;
 			return fail(400, { message: `Failed to update '${itemLabel}'.` });
 		}
@@ -351,7 +353,8 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(masterBOM).where(eq(masterBOM.id, id));
-		} catch {
+		} catch (err) {
+			console.error("delete BOM failed:", err);
 			return fail(400, { message: "Failed to delete." });
 		}
 
@@ -401,7 +404,8 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(masterBOM).where(inArray(masterBOM.id, deleteIds));
-		} catch {
+		} catch (err) {
+			console.error("bulkDelete BOM failed:", err);
 			return fail(400, { message: "Failed to bulk delete." });
 		}
 
@@ -425,7 +429,12 @@ export const actions: Actions = {
 			BOM_item_parent: string | null;
 			sort_order: number;
 		};
-		const updates: ReorderItem[] = JSON.parse(updatesJson);
+		let updates: ReorderItem[];
+		try {
+			updates = JSON.parse(updatesJson);
+		} catch {
+			return fail(400, { message: "Invalid update data format." });
+		}
 
 		// 비즈니스 규칙 및 순환참조 검증
 		const activeItems = await db.select().from(masterItem).where(eq(masterItem.isActive, true));
@@ -481,7 +490,12 @@ export const actions: Actions = {
 			BOM_item_parent_qty: number;
 			BOM_remark: string | null;
 		};
-		const changes: ChangeItem[] = JSON.parse(changesJson);
+		let changes: ChangeItem[];
+		try {
+			changes = JSON.parse(changesJson);
+		} catch {
+			return fail(400, { message: "Invalid change data format." });
+		}
 
 		// 비즈니스 규칙 검증
 		const activeItems = await db.select().from(masterItem).where(eq(masterItem.isActive, true));

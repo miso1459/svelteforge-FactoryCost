@@ -113,7 +113,8 @@ export const actions: Actions = {
 				updatedBy: userName,
 				updatedAt: now,
 			});
-		} catch {
+		} catch (err) {
+			console.error("create Item failed:", err);
 			return fail(400, { message: "Item Code already exists" });
 		}
 
@@ -165,7 +166,8 @@ export const actions: Actions = {
 					updatedAt: new Date(),
 				})
 				.where(eq(masterItem.itemCode, itemCode));
-		} catch {
+		} catch (err) {
+			console.error("update Item failed:", err);
 			return fail(400, { message: "Update failed" });
 		}
 
@@ -186,7 +188,8 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(masterItem).where(eq(masterItem.itemCode, itemCode));
-		} catch {
+		} catch (err) {
+			console.error("delete Item failed:", err);
 			return fail(400, { message: "Delete failed" });
 		}
 
@@ -212,7 +215,8 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(masterItem).where(inArray(masterItem.itemCode, ids));
-		} catch {
+		} catch (err) {
+			console.error("bulkDelete Item failed:", err);
 			return fail(400, { message: "Bulk delete failed" });
 		}
 
@@ -243,7 +247,8 @@ export const actions: Actions = {
 		let changes: ChangeItem[];
 		try {
 			changes = JSON.parse(changesJson);
-		} catch {
+		} catch (err) {
+			console.error("saveItems JSON parse failed:", err);
 			return fail(400, { message: "Invalid change data format." });
 		}
 

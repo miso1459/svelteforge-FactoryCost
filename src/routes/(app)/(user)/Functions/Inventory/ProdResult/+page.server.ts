@@ -323,7 +323,8 @@ export const actions: Actions = {
 				// Then delete R03
 				await db.delete(invTran).where(eq(invTran.id, id));
 			}
-		} catch {
+		} catch (err) {
+			console.error("bulkDelete ProdResult failed:", err);
 			return fail(400, { message: "Bulk delete failed" });
 		}
 
@@ -355,7 +356,8 @@ export const actions: Actions = {
 		let changes: ChangeItem[];
 		try {
 			changes = JSON.parse(changesJson);
-		} catch {
+		} catch (err) {
+			console.error("saveItems ProdResult JSON parse failed:", err);
 			return fail(400, { message: "Invalid change data format." });
 		}
 
