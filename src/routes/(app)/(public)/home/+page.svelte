@@ -24,7 +24,7 @@
 </svelte:head>
 
 <div
-	class="relative flex min-h-[calc(100vh-56px)] flex-col items-center justify-start overflow-hidden bg-slate-50 font-sans dark:bg-slate-950"
+	class="relative flex h-full flex-col items-center bg-slate-50 font-sans dark:bg-slate-950"
 >
 	<!-- Premium background glow elements -->
 	<div
@@ -35,7 +35,9 @@
 	></div>
 
 	<!-- Main Wrapper -->
-	<div class="z-10 flex w-full max-w-none flex-col gap-8">
+	<div
+		class="z-10 flex w-full max-w-none flex-1 min-h-0 flex-col gap-8 overflow-y-auto"
+	>
 		{#if data.document}
 			<!-- Main Article Card -->
 			<article

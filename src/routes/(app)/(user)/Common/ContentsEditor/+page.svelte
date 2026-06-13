@@ -246,7 +246,7 @@
 	}
 </script>
 
-<div class="flex h-[calc(100vh-64px)] w-full overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
+<div class="flex h-full w-full overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
 	
 	<!-- LEFT SIDEBAR: Document List -->
 	<aside class="w-80 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
