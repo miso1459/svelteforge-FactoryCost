@@ -30,15 +30,15 @@
 
 	const selectedLabel = $derived(items.find((i) => i.code === value)?.value ?? "");
 
-	const filtered = $derived(() => {
-		if (!search.trim()) return items;
-		const q = search.toLowerCase();
-		return items.filter(
+	function filterItems(list: CodeValue[], query: string) {
+		if (!query.trim()) return list;
+		const q = query.toLowerCase();
+		return list.filter(
 			(i) => i.code.toLowerCase().includes(q) || i.value.toLowerCase().includes(q)
 		);
-	});
+	}
 
-	const visibleItems = $derived(filtered());
+	const visibleItems = $derived(filterItems(items, search));
 	const maxCodeLen = $derived(
 		visibleItems.length > 0 ? Math.max(...visibleItems.map((i) => i.code.length)) : 1
 	);

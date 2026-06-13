@@ -81,16 +81,18 @@
 		})
 	);
 
-	const contentTrendData = $derived(() => {
+	function buildContentTrendData(rows: typeof data.contentTrend) {
 		const months = new Map<string, { month: string; published: number; draft: number }>();
-		for (const row of data.contentTrend) {
+		for (const row of rows) {
 			const existing = months.get(row.month) ?? { month: row.month, published: 0, draft: 0 };
 			if (row.status === "published") existing.published = row.count;
 			else if (row.status === "draft") existing.draft = row.count;
 			months.set(row.month, existing);
 		}
 		return [...months.values()];
-	});
+	}
+
+	const contentTrendData = $derived(buildContentTrendData(data.contentTrend));
 
 	const pageStatusData = $derived(
 		data.pagesByStatus.map((d) => ({
@@ -308,10 +310,10 @@
 			</Card.Header>
 			<Card.Content>
 				{#key mode.current}
-					{#if contentTrendData().length > 0}
+					{#if contentTrendData.length > 0}
 						<Chart.Container config={contentTrendConfig} class="h-[300px] w-full">
 							<BarChart
-								data={contentTrendData()}
+								data={contentTrendData}
 								x="month"
 								xScale={scaleBand().padding(0.3)}
 								series={[

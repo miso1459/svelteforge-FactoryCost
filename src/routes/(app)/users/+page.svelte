@@ -49,18 +49,16 @@
 		)
 	);
 
-	const sorted = $derived(() => {
-		const arr = [...filtered];
-		arr.sort((a, b) => {
+	const sorted = $derived(
+		[...filtered].sort((a, b) => {
 			const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
 			const bVal = String((b as Record<string, unknown>)[sortKey] ?? "");
 			const cmp = aVal.localeCompare(bVal);
 			return sortDir === "asc" ? cmp : -cmp;
-		});
-		return arr;
-	});
+		})
+	);
 
-	const paginated = $derived(sorted().slice((currentPage - 1) * pageSize, currentPage * pageSize));
+	const paginated = $derived(sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize));
 
 	$effect(() => {
 		// Reset page when search changes

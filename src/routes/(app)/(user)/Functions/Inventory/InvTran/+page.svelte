@@ -152,16 +152,18 @@
 		return activeItems;
 	};
 
-	const dateFiltered = $derived(() => {
-		const from = parseDate(fromDate);
-		const toEnd = parseDate(toDate);
+	function filterByDateRange(records: typeof data.records, fromStr: string, toStr: string) {
+		const from = parseDate(fromStr);
+		const toEnd = parseDate(toStr);
 		toEnd.setHours(23, 59, 59, 999);
-		return data.records.filter((r) => {
+		return records.filter((r) => {
 			const d = r.documentDt ? new Date(r.documentDt) : null;
 			if (!d) return false;
 			return d >= from && d <= toEnd;
 		});
-	});
+	}
+
+	const dateFiltered = $derived(filterByDateRange(data.records, fromDate, toDate));
 
 	function dateSearchStrings(date: Date | null): string[] {
 		if (!date) return [];
@@ -173,7 +175,7 @@
 	}
 
 	const filtered = $derived(
-		dateFiltered().filter(
+		dateFiltered.filter(
 			(r) =>
 				r.tranType.toLowerCase().includes(search.toLowerCase()) ||
 				r.tranItem.toLowerCase().includes(search.toLowerCase()) ||
@@ -186,18 +188,16 @@
 		)
 	);
 
-	const sorted = $derived(() => {
-		const arr = [...filtered];
-		arr.sort((a, b) => {
+	const sorted = $derived(
+		[...filtered].sort((a, b) => {
 			const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
 			const bVal = String((b as Record<string, unknown>)[sortKey] ?? "");
 			const cmp = aVal.localeCompare(bVal);
 			return sortDir === "asc" ? cmp : -cmp;
-		});
-		return arr;
-	});
+		})
+	);
 
-	const paginated = $derived(sorted().slice((currentPage - 1) * pageSize, currentPage * pageSize));
+	const paginated = $derived(sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize));
 
 	$effect(() => {
 		search; fromDate; toDate;
